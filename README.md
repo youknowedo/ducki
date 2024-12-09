@@ -27,7 +27,7 @@ change before the first full release.
 
 ## TODOS:
 
-- [ ] Migrate to Rust (90MB for a SFE???) [#1](https://github.com/youknowedo/ducki/issues/1)
+- [x] Migrate from Deno to Rust (90MB for a SFE???) [#1](https://github.com/youknowedo/ducki/issues/1)
 - [ ] Better command structure
       (`ducki <deckSlug> add [id] -f [front] -b [back]`) [#2](https://github.com/youknowedo/ducki/issues/2)
 - [ ] Logging & Undo [#3](https://github.com/youknowedo/ducki/issues/3)
