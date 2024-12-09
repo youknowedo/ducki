@@ -1,11 +1,9 @@
 # ducki
 
-Study flashcards from the comfort of your terminal to minimize distractions.
-Schedules cards using the Free Spaced Repetition Scheduler (FSRS) for maximized
+Study flashcards from the comfort of your terminal to minimize distractions. Schedules cards using the Free Spaced Repetition Scheduler (FSRS) for maximized
 learning.
 
-NOTE: This project us very much a WIP and commands/config files are subject to
-change before the first full release.
+#### NOTE: This project us very much a WIP and commands/config files are subject to change before the first full release. This is one of my first Rust projects so it's a bit messy :)
 
 ## Commands
 
@@ -25,9 +23,22 @@ change before the first full release.
 2. Add a card to the deck with `ducki deck add`
 3. Study the new deck with `ducki study`
 
+# Building
+
+## Host-only
+```bash
+cargo build
+```
+
+## Cross-platform
+```bash
+cargo install cross --git https://github.com/cross-rs/cross
+./build.sh
+```
+
 ## TODOS:
 
-- [ ] Migrate to Rust (90MB for a SFE???) [#1](https://github.com/youknowedo/ducki/issues/1)
+- [x] Migrate from Deno to Rust (90MB for a SFE???) [#1](https://github.com/youknowedo/ducki/issues/1)
 - [ ] Better command structure
       (`ducki <deckSlug> add [id] -f [front] -b [back]`) [#2](https://github.com/youknowedo/ducki/issues/2)
 - [ ] Logging & Undo [#3](https://github.com/youknowedo/ducki/issues/3)
