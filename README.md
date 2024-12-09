@@ -25,6 +25,19 @@ change before the first full release.
 2. Add a card to the deck with `ducki deck add`
 3. Study the new deck with `ducki study`
 
+# Building
+
+## Host-only
+```bash
+cargo build
+```
+
+## Cross-platform
+```bash
+cargo install cross --git https://github.com/cross-rs/cross
+./build.sh
+```
+
 ## TODOS:
 
 - [x] Migrate from Deno to Rust (90MB for a SFE???) [#1](https://github.com/youknowedo/ducki/issues/1)
