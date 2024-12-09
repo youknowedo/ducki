@@ -1,11 +1,9 @@
 # ducki
 
-Study flashcards from the comfort of your terminal to minimize distractions.
-Schedules cards using the Free Spaced Repetition Scheduler (FSRS) for maximized
+Study flashcards from the comfort of your terminal to minimize distractions. Schedules cards using the Free Spaced Repetition Scheduler (FSRS) for maximized
 learning.
 
-NOTE: This project us very much a WIP and commands/config files are subject to
-change before the first full release.
+#### NOTE: This project us very much a WIP and commands/config files are subject to change before the first full release. This is one of my first Rust projects so it's a bit messy :)
 
 ## Commands
 
