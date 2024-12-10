@@ -91,7 +91,7 @@ pub fn run(args: StudyArgs) {
     let mut cards = new_progress
         .cards
         .iter()
-        .filter(|progress_card| progress_card.fsrs.due < now)
+        .filter(|progress_card| progress_card.fsrs.due.clone() < now)
         .map(|progress_card| progress_card.clone())
         .collect::<Vec<_>>();
 
@@ -133,7 +133,7 @@ pub fn run(args: StudyArgs) {
             .unwrap();
 
         let fsrs = FSRS::default();
-        let schedules = fsrs.repeat(card.fsrs, Utc::now());
+        let schedules = fsrs.repeat(card.fsrs.clone(), Utc::now());
 
         Text::new(&deck_card.front).prompt().unwrap();
 
@@ -170,7 +170,7 @@ pub fn run(args: StudyArgs) {
         deck.add_log(
             deck.id.clone(),
             Log {
-                last_card: deck_card.clone(),
+                last_card: card.clone(),
                 log: new_schedule.review_log,
             },
         );

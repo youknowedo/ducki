@@ -6,7 +6,7 @@ use std::{
 use rs_fsrs::ReviewLog;
 use serde::{Deserialize, Serialize};
 
-use crate::config::Config;
+use crate::{config::Config, progress::ProgressCard};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Deck<'a> {
@@ -82,7 +82,7 @@ impl Default for Deck<'_> {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Log {
-    pub last_card: Card,
+    pub last_card: ProgressCard,
     pub log: ReviewLog,
 }
 
