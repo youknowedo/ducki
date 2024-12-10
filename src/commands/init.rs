@@ -76,7 +76,8 @@ pub fn run(args: InitArgs) {
         }
     }
 
-    let deck = crate::types::Deck {
+    let deck = crate::deck::Deck {
+        config: Some(&config),
         id: id.clone(),
         description: match Text::new("What description should the new deck have?").prompt() {
             Ok(description) => description,

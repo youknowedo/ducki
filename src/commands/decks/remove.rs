@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use clap::Parser;
 use inquire::{Confirm, Select, Text};
 
-use crate::{config::get_config, types::Deck};
+use crate::{config::get_config, deck::Deck};
 
 #[derive(Parser, Debug, Clone)]
 pub struct RemoveArgs {

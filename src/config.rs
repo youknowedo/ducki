@@ -7,6 +7,12 @@ pub struct Config {
     pub decks: Vec<DeckEntry>,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Config { decks: Vec::new() }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DeckEntry {
     pub id: String,

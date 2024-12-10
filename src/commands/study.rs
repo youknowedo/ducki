@@ -3,9 +3,9 @@ use std::{fs, path::Path};
 use chrono::Utc;
 use clap::Parser;
 use inquire::{Select, Text};
-use rs_fsrs::{Card as FSRSCard, FSRS, Rating as FSRSRating};
+use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating, FSRS};
 
-use crate::types::{Deck, Progress, ProgressCard, Rating};
+use crate::deck::{Deck, Log, Progress, ProgressCard, Rating};
 use rand::seq::SliceRandom;
 
 #[derive(Parser, Debug, Clone)]
@@ -30,7 +30,7 @@ pub fn run(args: StudyArgs) {
                 return;
             }
         },
-        None => match Select::new("Select a deck to study", config.decks).prompt() {
+        None => match Select::new("Select a deck to study", config.decks.clone()).prompt() {
             Ok(entry) => entry.clone(),
             Err(_) => {
                 println!("Failed to get deck selection.");
@@ -41,8 +41,12 @@ pub fn run(args: StudyArgs) {
     let deck_path = Path::new(deck_entry.path.as_str());
 
     let deck: Deck = match fs::read_to_string(deck_path.join("deck.json")) {
-        Ok(contents) => match serde_json::from_str(&contents) {
-            Ok(config) => config,
+        Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
+            Ok(mut deck) => {
+                deck.config = Some(&config);
+
+                deck
+            }
             Err(err) => {
                 panic!("Could not parse deck file: {}", err);
             }
@@ -161,5 +165,13 @@ pub fn run(args: StudyArgs) {
 
         let progress_json = serde_json::to_string_pretty(&new_progress).unwrap();
         fs::write(&progress_path, progress_json).unwrap();
+
+        deck.add_log(
+            deck.id.clone(),
+            Log {
+                last_card: deck_card.clone(),
+                log: new_schedule.review_log,
+            },
+        );
     }
 }
