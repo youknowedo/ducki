@@ -8,13 +8,14 @@ learning.
 ## Commands
 
 - `list|ls` List all decks
-- `init|i [slug]` Add a new deck
+- `init|i [id]` Add a new deck
 - `add [path]` Add an existing deck
-- `remove|rm [slug]` Remove a deck
-- `study [slug]` Study a deck
-- `deck`
-  - `add [slug] [id] [front] [back]` Add a card to a deck
-  - `remove|rm [slug] [id]` Remove a card from a deck
+- `remove|rm [id]` Remove a deck
+- `study [id]` Study a deck
+- `deck <id>`
+  - `add [--id] [--front] [--back]` Add a card to a deck
+  - `import <file> [--type]` Import cards from a file. Possible file types: `csv`, `json`
+  - `remove|rm [id]` Remove a card from a deck
   - `help [command]` display help for command
 
 ## Get started
