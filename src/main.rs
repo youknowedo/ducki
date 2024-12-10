@@ -1,6 +1,7 @@
 use clap::Parser;
 
 mod config;
+mod progress;
 mod deck;
 
 mod commands;
