@@ -5,7 +5,7 @@ use clap::Parser;
 use inquire::{Select, Text};
 use rs_fsrs::{Card as FSRSCard, FSRS, Rating as FSRSRating};
 
-use crate::deck::{Deck, Progress, ProgressCard, Rating};
+use crate::types::{Deck, Progress, ProgressCard, Rating};
 use rand::seq::SliceRandom;
 
 #[derive(Parser, Debug, Clone)]

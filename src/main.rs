@@ -1,7 +1,7 @@
 use clap::Parser;
 
 mod config;
-mod deck;
+mod types;
 
 mod commands;
 use commands::*;
