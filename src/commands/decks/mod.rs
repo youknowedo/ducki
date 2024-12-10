@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 pub mod add;
 pub mod remove;
 pub mod undo;
+pub mod import;
 
 #[derive(Parser, Debug, Clone)]
 pub struct DeckArgs {
@@ -19,6 +20,13 @@ pub enum DeckCommands {
         about = "Add an existing deck to the config"
     )]
     Add(add::AddArgs),
+
+    #[command(
+        name = "import",
+        alias = "i",
+        about = "Import a deck from a file"
+    )]
+    Import(import::ImportArgs),
 
     #[command(name = "remove", alias = "rm", about = "Remove a deck from the config")]
     Remove(remove::RemoveArgs),
