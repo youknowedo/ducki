@@ -5,7 +5,7 @@ use inquire::{Select, Text};
 
 use crate::{
     config::get_config,
-    types::{Card, Deck},
+    deck::{Card, Deck},
 };
 
 #[derive(Parser, Debug, Clone)]

@@ -4,20 +4,6 @@ use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Deck {
-    pub id: String,
-    pub description: String,
-    pub cards: Vec<Card>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Card {
-    pub id: String,
-    pub front: String,
-    pub back: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
 pub struct Progress {
     pub cards: Vec<ProgressCard>,
 }

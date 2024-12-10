@@ -57,6 +57,7 @@ pub fn run_command(cmd: Commands) {
         Commands::Deck(args) => match args.cmd {
             DeckCommands::Add(sub_args) => decks::add::run(Some(args.deck_id), sub_args),
             DeckCommands::Remove(sub_args) => decks::remove::run(Some(args.deck_id), sub_args),
+            DeckCommands::Undo => decks::undo::run(Some(args.deck_id)),
         },
 
         Commands::Study(args) => study::run(args),

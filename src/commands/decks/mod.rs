@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 pub mod add;
 pub mod remove;
+pub mod undo;
 
 #[derive(Parser, Debug, Clone)]
 pub struct DeckArgs {
@@ -21,4 +22,7 @@ pub enum DeckCommands {
 
     #[command(name = "remove", alias = "rm", about = "Remove a deck from the config")]
     Remove(remove::RemoveArgs),
+
+    #[command(name = "undo", alias = "u", about = "Undo the last action")]
+    Undo,
 }
