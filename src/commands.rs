@@ -56,9 +56,9 @@ pub enum Commands {
     Deck(DeckArgs),
 }
 
-pub fn run_command(cmd: Option<Commands>) {
+pub fn run_command(cmd: Option<Commands>, siv: &mut cursive::Cursive) {
     match cmd {
-        None => tui::run(),
+        None => tui::run(siv),
         Some(cmd) => match cmd {
             Commands::List => list::run(),
             Commands::Init(args) => init::run(args),
