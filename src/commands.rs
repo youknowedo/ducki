@@ -1,6 +1,7 @@
 use clap::{command, Parser, Subcommand};
 
 mod decks;
+use cursive::view::{Nameable, Resizable, Scrollable};
 use decks::{DeckArgs, DeckCommands};
 
 mod add;
@@ -9,14 +10,15 @@ mod init;
 use init::InitArgs;
 mod remove;
 use remove::RemoveArgs;
+mod help;
 mod list;
 mod tui;
 
 mod study;
 use study::StudyArgs;
 
-#[derive(Parser)]
-#[command(author("Sigfredo"), version("v0.0.2"), about, long_about = None)]
+#[derive(Parser, Debug)]
+#[command(author("Sigfredo"), version("v0.0.2"), about, long_about = None, disable_help_flag = true, disable_help_subcommand = true)] // Disable default help flag
 pub struct Args {
     #[command(subcommand)]
     pub cmd: Option<Commands>,
@@ -24,6 +26,9 @@ pub struct Args {
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
+    #[command(name = "help", about = "Print help information")]
+    Help,
+
     #[command(name = "list", alias = "ls", about = "List all decks")]
     List,
 
@@ -56,11 +61,26 @@ pub enum Commands {
     Deck(DeckArgs),
 }
 
-pub fn run_command(cmd: Option<Commands>) {
+pub fn run_command(cmd: Option<Commands>, siv: &mut Option<&mut cursive::Cursive>) {
     match cmd {
-        None => tui::run(),
+        None => match siv {
+            Some(s) => tui::run(s),
+            None => {
+                let mut siv = cursive::default();
+
+                siv.add_fullscreen_layer(
+                    cursive::views::TextView::new("")
+                        .with_name("content")
+                        .scrollable()
+                        .full_screen(),
+                );
+
+                tui::run(&mut siv)
+            }
+        },
         Some(cmd) => match cmd {
-            Commands::List => list::run(),
+            Commands::Help => help::run(siv),
+            Commands::List => list::run(siv),
             Commands::Init(args) => init::run(args),
             Commands::Add(args) => add::run(args),
             Commands::Remove(args) => remove::run(args),
