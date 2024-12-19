@@ -1,7 +1,7 @@
-use clap::Subcommand;
+use clap::{command, Parser, Subcommand};
 
 mod decks;
-use decks::{DeckCommands, DeckArgs};
+use decks::{DeckArgs, DeckCommands};
 
 mod add;
 use add::AddArgs;
@@ -10,9 +10,17 @@ use init::InitArgs;
 mod remove;
 use remove::RemoveArgs;
 mod list;
+mod tui;
 
 mod study;
 use study::StudyArgs;
+
+#[derive(Parser)]
+#[command(author("Sigfredo"), version("v0.0.2"), about, long_about = None)]
+pub struct Args {
+    #[command(subcommand)]
+    pub cmd: Option<Commands>,
+}
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
@@ -48,18 +56,21 @@ pub enum Commands {
     Deck(DeckArgs),
 }
 
-pub fn run_command(cmd: Commands) {
+pub fn run_command(cmd: Option<Commands>) {
     match cmd {
-        Commands::List => list::run(),
-        Commands::Init(args) => init::run(args),
-        Commands::Add(args) => add::run(args),
-        Commands::Remove(args) => remove::run(args),
-        Commands::Deck(args) => match args.cmd {
-            DeckCommands::Add(sub_args) => decks::add::run(Some(args.deck_id), sub_args),
-            DeckCommands::Remove(sub_args) => decks::remove::run(Some(args.deck_id), sub_args),
-            DeckCommands::Undo => decks::undo::run(Some(args.deck_id)),
-        },
+        None => tui::run(),
+        Some(cmd) => match cmd {
+            Commands::List => list::run(),
+            Commands::Init(args) => init::run(args),
+            Commands::Add(args) => add::run(args),
+            Commands::Remove(args) => remove::run(args),
+            Commands::Deck(args) => match args.cmd {
+                DeckCommands::Add(sub_args) => decks::add::run(Some(args.deck_id), sub_args),
+                DeckCommands::Remove(sub_args) => decks::remove::run(Some(args.deck_id), sub_args),
+                DeckCommands::Undo => decks::undo::run(Some(args.deck_id)),
+            },
 
-        Commands::Study(args) => study::run(args),
+            Commands::Study(args) => study::run(args),
+        },
     }
 }
