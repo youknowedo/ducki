@@ -1,14 +1,16 @@
-use core::panic;
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use cursive::{view::Resizable, views::Dialog};
-use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
     config::{get_config, save_config_with_siv, DeckEntry},
     deck::Deck,
+    util::{read_temp_file_with_siv, write_temp_file_with_siv},
 };
 
 use super::deck_select;
@@ -29,22 +31,6 @@ fn select_path(siv: &mut cursive::Cursive) {
         Err(_) => std::path::PathBuf::from(""),
     };
 
-    let project_dirs = match ProjectDirs::from("dev", "sigfredo", "ducki") {
-        Some(dirs) => dirs,
-        None => {
-            siv.add_layer(Dialog::info("Could not find project directories"));
-            return;
-        }
-    };
-
-    let cache_dir = project_dirs.cache_dir().to_path_buf();
-
-    let temp_data_path = cache_dir
-        .join(Uuid::new_v4().to_string())
-        .to_str()
-        .unwrap()
-        .to_string();
-
     siv.add_layer(
         Dialog::around(
             cursive::views::EditView::new()
@@ -59,36 +45,10 @@ fn select_path(siv: &mut cursive::Cursive) {
                             deck: Deck::default(),
                         };
 
-                        match fs::exists(temp_data_path.as_str()) {
-                            Ok(exists) => {
-                                if !exists {
-                                    match fs::create_dir_all(cache_dir.clone()) {
-                                        Ok(_) => {}
-                                        Err(err) => {
-                                            s.add_layer(Dialog::info(format!(
-                                                "Something went wrong: {}",
-                                                err
-                                            )));
-                                        }
-                                    }
-                                }
-                            }
-                            Err(_) => match fs::create_dir_all(cache_dir.clone()) {
-                                Ok(_) => {}
-                                Err(err) => {
-                                    s.add_layer(Dialog::info(format!(
-                                        "Something went wrong: {}",
-                                        err
-                                    )));
-                                }
-                            },
-                        }
+                        let temp_file_id = Uuid::new_v4().to_string();
 
-                        match fs::write(
-                            temp_data_path.as_str(),
-                            serde_json::to_string(&data).unwrap(),
-                        ) {
-                            Ok(_) => select_id(s, temp_data_path.clone()),
+                        match write_temp_file_with_siv(s, &temp_file_id, &data) {
+                            Ok(_) => select_id(s, temp_file_id.clone()),
                             Err(err) => {
                                 s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
                             }
@@ -103,49 +63,39 @@ fn select_path(siv: &mut cursive::Cursive) {
     );
 }
 
-fn select_id(siv: &mut cursive::Cursive, temp_data_path: String) {
-    let data = match fs::read_to_string(temp_data_path.as_str()) {
-        Ok(contents) => match serde_json::from_str::<InitData>(&contents) {
-            Ok(data) => data,
-            Err(err) => {
-                panic!("Something went wrong: {}", err);
-            }
-        },
+fn select_id(siv: &mut cursive::Cursive, temp_file_id: String) {
+    let data = match read_temp_file_with_siv::<InitData>(siv, &temp_file_id) {
+        Ok(data) => data,
         Err(err) => {
-            panic!("Something went wrong: {}", err);
+            siv.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
+            return;
         }
     };
-
-    let path = PathBuf::from(data.path.clone());
-    let default = path.file_name().unwrap().to_str().unwrap();
+    let default = Path::new(&data.path).file_name().unwrap().to_str().unwrap();
 
     siv.add_layer(
         Dialog::around(
             cursive::views::EditView::new()
                 .content(default.to_string())
-                .on_submit(move |s, id| {
-                    s.pop_layer();
-                    let mut data = match fs::read_to_string(temp_data_path.as_str()) {
-                        Ok(contents) => match serde_json::from_str::<InitData>(&contents) {
+                .on_submit({
+                    let temp_file_id = temp_file_id.clone();
+                    move |s: &mut cursive::Cursive, id: &str| {
+                        s.pop_layer();
+                        let mut data = match read_temp_file_with_siv::<InitData>(s, &temp_file_id) {
                             Ok(data) => data,
                             Err(err) => {
-                                panic!("Something went wrong: {}", err);
+                                s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
+                                return;
                             }
-                        },
-                        Err(err) => {
-                            panic!("Something went wrong: {}", err);
-                        }
-                    };
+                        };
 
-                    data.deck.id = id.to_string();
+                        data.deck.id = id.to_string();
 
-                    match fs::write(
-                        temp_data_path.as_str(),
-                        serde_json::to_string(&data).unwrap(),
-                    ) {
-                        Ok(_) => select_description(s, temp_data_path.clone()),
-                        Err(err) => {
-                            s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
+                        match write_temp_file_with_siv(s, &temp_file_id, &data) {
+                            Ok(_) => select_description(s, temp_file_id.clone()),
+                            Err(err) => {
+                                s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
+                            }
                         }
                     }
                 })
@@ -155,31 +105,24 @@ fn select_id(siv: &mut cursive::Cursive, temp_data_path: String) {
     );
 }
 
-fn select_description(siv: &mut cursive::Cursive, temp_data_path: String) {
+fn select_description(siv: &mut cursive::Cursive, temp_file_id: String) {
     siv.add_layer(
         Dialog::around(
             cursive::views::EditView::new()
                 .on_submit(move |s, description| {
                     s.pop_layer();
-                    let mut data = match fs::read_to_string(temp_data_path.as_str()) {
-                        Ok(contents) => match serde_json::from_str::<InitData>(&contents) {
-                            Ok(data) => data,
-                            Err(err) => {
-                                panic!("Something went wrong: {}", err);
-                            }
-                        },
+                    let mut data = match read_temp_file_with_siv::<InitData>(s, &temp_file_id) {
+                        Ok(data) => data,
                         Err(err) => {
-                            panic!("Something went wrong: {}", err);
+                            s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
+                            return;
                         }
                     };
 
                     data.deck.description = description.to_string();
 
-                    match fs::write(
-                        temp_data_path.as_str(),
-                        serde_json::to_string(&data).unwrap(),
-                    ) {
-                        Ok(_) => save_deck(s, temp_data_path.clone()),
+                    match write_temp_file_with_siv(s, &temp_file_id, &data) {
+                        Ok(_) => save_deck(s, temp_file_id.clone()),
                         Err(err) => {
                             s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
                         }
@@ -192,14 +135,8 @@ fn select_description(siv: &mut cursive::Cursive, temp_data_path: String) {
 }
 
 fn save_deck(siv: &mut cursive::Cursive, temp_data_path: String) {
-    let data = match fs::read_to_string(temp_data_path.as_str()) {
-        Ok(contents) => match serde_json::from_str::<InitData>(&contents) {
-            Ok(data) => data,
-            Err(err) => {
-                siv.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
-                return;
-            }
-        },
+    let data = match read_temp_file_with_siv::<InitData>(siv, &temp_data_path) {
+        Ok(data) => data,
         Err(err) => {
             siv.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
             return;
