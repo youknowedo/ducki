@@ -14,6 +14,8 @@ pub struct InitArgs {
 pub fn run(args: InitArgs) {
     let mut config = crate::config::get_config();
 
+    println!("{:?}", serde_json::to_string_pretty(&config));
+
     let mut id = match args.id {
         Some(id) => id,
         None => match Text::new("What ID should the new deck have?")

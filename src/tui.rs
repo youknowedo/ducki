@@ -3,6 +3,8 @@ use cursive::event::Key;
 use cursive::traits::*;
 use cursive::views::*;
 
+pub mod deck_select;
+pub mod init_deck;
 
 use super::run_command;
 
