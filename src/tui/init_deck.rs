@@ -3,7 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use cursive::{view::Resizable, views::Dialog};
+use cursive::{
+    view::Resizable,
+    views::{Dialog, TextView},
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -18,6 +21,9 @@ use super::deck_select;
 #[derive(Serialize, Deserialize)]
 struct InitData<'a> {
     path: String,
+    overwrite_file: bool,
+    overwrite_path_in_config: bool,
+    overwrite_id_in_config: bool,
     deck: Deck<'a>,
 }
 
@@ -36,25 +42,72 @@ fn select_path(siv: &mut cursive::Cursive) {
             cursive::views::EditView::new()
                 .content(default.to_str().unwrap())
                 .on_submit(move |s, path| {
-                    let path = std::path::PathBuf::from(path);
-                    if path.exists() {
-                        s.pop_layer();
+                    s.pop_layer();
+                    let path = path.to_string();
 
+                    if let Err(err) = fs::create_dir_all(&path) {
+                        if err.kind() != std::io::ErrorKind::AlreadyExists {
+                            s.add_layer(Dialog::info(format!(
+                                "Could not create directory: {}",
+                                err
+                            )));
+                            return;
+                        }
+                    }
+
+                    fn save(
+                        s: &mut cursive::Cursive,
+                        path: &str,
+                        overwrite_file: bool,
+                        overwrite_path_in_config: bool,
+                    ) {
                         let data = InitData {
-                            path: path.to_str().unwrap().to_string(),
+                            path: path.to_string(),
+                            overwrite_file,
+                            overwrite_path_in_config,
+                            overwrite_id_in_config: false,
                             deck: Deck::default(),
                         };
 
                         let temp_file_id = Uuid::new_v4().to_string();
-
                         match write_temp_file_with_siv(s, &temp_file_id, &data) {
                             Ok(_) => select_id(s, temp_file_id.clone()),
                             Err(err) => {
                                 s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
                             }
                         }
-                    } else {
-                        s.add_layer(Dialog::info("Path does not exist"));
+                    }
+
+                    match fs::exists(Path::new(path.as_str()).join("deck.json")) {
+                        Ok(exists) => {
+                            if exists {
+                                s.add_layer(
+                                    Dialog::around(TextView::new(
+                                        "A deck already exists at this path.",
+                                    ))
+                                    .title("Warning!")
+                                    .button("Change path", |s| {
+                                        s.pop_layer();
+                                        select_path(s);
+                                    })
+                                    .button(
+                                        "Overwrite",
+                                        move |s| {
+                                            s.pop_layer();
+
+                                            save(s, path.as_str(), true, false);
+                                        },
+                                    ),
+                                );
+                                return;
+                            }
+
+                            save(s, path.as_str(), false, false);
+                        }
+                        Err(err) => {
+                            s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
+                            return;
+                        }
                     }
                 })
                 .fixed_width(50),
@@ -80,6 +133,8 @@ fn select_id(siv: &mut cursive::Cursive, temp_file_id: String) {
                 .on_submit({
                     let temp_file_id = temp_file_id.clone();
                     move |s: &mut cursive::Cursive, id: &str| {
+                        let id = id.to_string();
+                        let temp_file_id = temp_file_id.clone();
                         s.pop_layer();
                         let mut data = match read_temp_file_with_siv::<InitData>(s, &temp_file_id) {
                             Ok(data) => data,
@@ -89,14 +144,60 @@ fn select_id(siv: &mut cursive::Cursive, temp_file_id: String) {
                             }
                         };
 
-                        data.deck.id = id.to_string();
+                        fn save(s: &mut cursive::Cursive, id: &str, overwrite_id_in_config: bool) {
+                            let mut data = match read_temp_file_with_siv::<InitData>(s, id) {
+                                Ok(data) => data,
+                                Err(err) => {
+                                    s.add_layer(Dialog::info(format!(
+                                        "Something went wrong: {}",
+                                        err
+                                    )));
+                                    return;
+                                }
+                            };
 
-                        match write_temp_file_with_siv(s, &temp_file_id, &data) {
-                            Ok(_) => select_description(s, temp_file_id.clone()),
-                            Err(err) => {
-                                s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
+                            data.overwrite_id_in_config = overwrite_id_in_config;
+                            data.deck.id = id.to_string();
+
+                            match write_temp_file_with_siv(s, id, &data) {
+                                Ok(_) => select_description(s, id.to_string()),
+                                Err(err) => {
+                                    s.add_layer(Dialog::info(format!(
+                                        "Something went wrong: {}",
+                                        err
+                                    )));
+                                }
                             }
                         }
+
+                        data.deck.id = id.to_string();
+
+                        let config = get_config();
+                        for deck in config.decks.iter() {
+                            if deck.id == id {
+                                s.add_layer(
+                                    Dialog::around(TextView::new(
+                                        "A deck with this id already exists.",
+                                    ))
+                                    .title("Warning!")
+                                    .button("Change id", move |s| {
+                                        s.pop_layer();
+                                        select_id(s, temp_file_id.clone());
+                                    })
+                                    .button(
+                                        "Overwrite",
+                                        move |s| {
+                                            s.pop_layer();
+
+                                            save(s, id.as_str(), true);
+                                        },
+                                    ),
+                                );
+                                return;
+                            }
+                        }
+
+                        save(s, id.as_str(), false);
                     }
                 })
                 .fixed_width(50),
