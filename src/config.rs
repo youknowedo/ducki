@@ -1,6 +1,7 @@
+use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::fs;
-use std::{env, fmt};
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -26,15 +27,14 @@ impl fmt::Display for DeckEntry {
 }
 
 pub fn get_config() -> Config {
-    // TODO: Use real home directory
-    let home = match env::home_dir() {
-        Some(home) => home,
+    let project_dirs = match ProjectDirs::from("dev", "sigfredo", "ducki") {
+        Some(dirs) => dirs,
         None => {
-            panic!("Could not find home directory");
+            panic!("Could not get project directories");
         }
     };
 
-    match fs::read_to_string(home.join(".ducki")) {
+    match fs::read_to_string(project_dirs.config_dir().join("config.json")) {
         Ok(contents) => match serde_json::from_str(&contents) {
             Ok(config) => config,
             Err(err) => {
@@ -52,15 +52,17 @@ pub fn get_config() -> Config {
 }
 
 pub fn save_config(config: Config) {
-    // TODO: Use real home directory
-    let home = match env::home_dir() {
-        Some(home) => home,
+    let project_dirs = match ProjectDirs::from("dev", "sigfredo", "ducki") {
+        Some(dirs) => dirs,
         None => {
-            panic!("Could not find home directory");
+            panic!("Could not get project directories");
         }
     };
 
-    match fs::write(home.join(".ducki"), serde_json::to_string(&config).unwrap()) {
+    match fs::write(
+        project_dirs.config_dir().join("config.json"),
+        serde_json::to_string(&config).unwrap(),
+    ) {
         Ok(_) => {}
         Err(err) => {
             panic!("Could not write config file: {}", err);
