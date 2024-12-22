@@ -1,9 +1,9 @@
 use clap::{command, Parser, Subcommand};
 
 mod decks;
-use cursive::view::{Nameable, Resizable, Scrollable};
 use decks::{DeckArgs, DeckCommands};
 
+mod default;
 mod add;
 use add::AddArgs;
 mod init;
@@ -12,10 +12,11 @@ mod remove;
 use remove::RemoveArgs;
 mod help;
 mod list;
-mod tui;
 
 mod study;
 use study::StudyArgs;
+
+use crate::tui;
 
 #[derive(Parser, Debug)]
 #[command(author("Sigfredo"), version("v0.0.2"), about, long_about = None, disable_help_flag = true, disable_help_subcommand = true)] // Disable default help flag
@@ -64,18 +65,13 @@ pub enum Commands {
 pub fn run_command(cmd: Option<Commands>, siv: &mut Option<&mut cursive::Cursive>) {
     match cmd {
         None => match siv {
-            Some(s) => tui::run(s),
+            Some(s) => default::run(s),
             None => {
                 let mut siv = cursive::default();
 
-                siv.add_fullscreen_layer(
-                    cursive::views::TextView::new("")
-                        .with_name("content")
-                        .scrollable()
-                        .full_screen(),
-                );
+                tui::setup(&mut siv);
 
-                tui::run(&mut siv)
+                default::run(&mut siv)
             }
         },
         Some(cmd) => match cmd {

@@ -7,6 +7,7 @@ mod progress;
 mod commands;
 use commands::*;
 
+mod tui;
 mod util;
 
 fn main() {

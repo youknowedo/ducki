@@ -1,20 +1,28 @@
 use clap::Parser;
 use cursive::event::Key;
-use cursive::{traits::*, CursiveExt};
+use cursive::traits::*;
 use cursive::views::*;
+
 
 use super::run_command;
 
-pub fn run(siv: &mut cursive::Cursive) {
+pub fn setup(siv: &mut cursive::Cursive) {
     siv.add_global_callback(':', |s| open_cmd_dialog(s));
-    siv.add_global_callback(Key::Esc, |s| {
-        s.pop_layer();
-    });
 
-    siv.run();
+    siv.add_fullscreen_layer(
+        cursive::views::TextView::new("")
+            .with_name("content")
+            .scrollable()
+            .full_screen(),
+    );
 }
 
 pub fn open_cmd_dialog(siv: &mut cursive::Cursive) {
+    siv.add_global_callback(Key::Esc, |s| {
+        s.pop_layer();
+        s.clear_global_callbacks(Key::Esc);
+    });
+
     let (x, _) = termion::terminal_size().unwrap();
 
     let command_box = EditView::new()
@@ -24,8 +32,15 @@ pub fn open_cmd_dialog(siv: &mut cursive::Cursive) {
                     .into_iter()
                     .chain(cmd.split_whitespace())
                     .collect::<Vec<_>>(),
-            );            
-            s.pop_layer();
+            );
+            s.clear();
+
+            s.add_fullscreen_layer(
+                cursive::views::TextView::new("")
+                    .with_name("content")
+                    .scrollable()
+                    .full_screen(),
+            );
 
             // TODO: Handle error
             match args {
