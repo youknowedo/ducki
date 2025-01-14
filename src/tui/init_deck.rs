@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::deck::Deck;
+use crate::{deck::Deck, InitArgs};
 
 mod select_path;
 mod save_deck;
@@ -16,6 +16,6 @@ struct InitData<'a> {
     deck: Deck<'a>,
 }
 
-pub fn run(siv: &mut cursive::Cursive) {
-    select_path::run(siv);
+pub fn run(siv: &mut cursive::Cursive, id: Option<String>) {
+    select_path::run(siv, id);
 }

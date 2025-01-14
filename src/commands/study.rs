@@ -2,6 +2,7 @@ use std::{fs, path::Path};
 
 use chrono::Utc;
 use clap::Parser;
+use cursive::views::Dialog;
 use inquire::{Select, Text};
 use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating, FSRS};
 
@@ -14,7 +15,14 @@ pub struct StudyArgs {
     id: Option<String>,
 }
 
-pub fn run(args: StudyArgs) {
+pub fn run(args: StudyArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => s.add_layer(Dialog::info("This command is not available in the TUI.")),
+        None => terminal(args),
+    }
+}
+
+fn terminal(args: StudyArgs) {
     let mut config = match crate::config::get_config() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),

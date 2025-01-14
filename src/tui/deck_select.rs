@@ -25,7 +25,7 @@ fn select_deck(siv: &mut cursive::Cursive, id: &str) {
     if id == ":add" {
         siv.pop_layer();
 
-        tui::init_deck::run(siv)
+        tui::init_deck::run(siv, None)
     } else {
         siv.pop_layer();
     }

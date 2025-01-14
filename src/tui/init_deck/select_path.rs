@@ -15,9 +15,12 @@ use crate::{
     util::write_temp_file_with_siv,
 };
 
-pub fn run(siv: &mut cursive::Cursive) {
+pub fn run(siv: &mut cursive::Cursive, id: Option<String>) {
     let default = match std::env::current_dir() {
-        Ok(path) => path,
+        Ok(path) => match id {
+            Some(id) => path.join(id.clone()),
+            None => path,
+        },
         Err(_) => std::path::PathBuf::from(""),
     };
 
@@ -51,7 +54,7 @@ fn on_submit(s: &mut cursive::Cursive, path: &str) {
                         .title("Warning!")
                         .button("Change path", |s| {
                             s.pop_layer();
-                            run(s);
+                            run(s, None);
                         })
                         .button("Overwrite", move |s| {
                             s.pop_layer();

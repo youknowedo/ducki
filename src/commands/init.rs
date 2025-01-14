@@ -6,12 +6,21 @@ use std::{
 use clap::Parser;
 use inquire::{Confirm, Text};
 
+use crate::tui::init_deck::run as tui;
+
 #[derive(Parser, Debug, Clone)]
 pub struct InitArgs {
     id: Option<String>,
 }
 
-pub fn run(args: InitArgs) {
+pub fn run(args: InitArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => tui(s, args.id),
+        None => terminal(args),
+    }
+}
+
+fn terminal(args: InitArgs) {
     let mut config = match crate::config::get_config() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),

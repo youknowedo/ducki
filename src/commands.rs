@@ -5,11 +5,11 @@ use decks::{DeckArgs, DeckCommands};
 
 mod default;
 mod add;
-use add::AddArgs;
+pub use add::AddArgs;
 mod init;
-use init::InitArgs;
+pub use init::InitArgs;
 mod remove;
-use remove::RemoveArgs;
+pub use remove::RemoveArgs;
 mod help;
 mod list;
 
@@ -77,16 +77,16 @@ pub fn run_command(cmd: Option<Commands>, siv: &mut Option<&mut cursive::Cursive
         Some(cmd) => match cmd {
             Commands::Help => help::run(siv),
             Commands::List => list::run(siv),
-            Commands::Init(args) => init::run(args),
-            Commands::Add(args) => add::run(args),
-            Commands::Remove(args) => remove::run(args),
+            Commands::Init(args) => init::run(args, siv),
+            Commands::Add(args) => add::run(args, siv),
+            Commands::Remove(args) => remove::run(args, siv),
             Commands::Deck(args) => match args.cmd {
-                DeckCommands::Add(sub_args) => decks::add::run(Some(args.deck_id), sub_args),
-                DeckCommands::Remove(sub_args) => decks::remove::run(Some(args.deck_id), sub_args),
-                DeckCommands::Undo => decks::undo::run(Some(args.deck_id)),
+                DeckCommands::Add(sub_args) => decks::add::run(Some(args.deck_id), sub_args, siv),
+                DeckCommands::Remove(sub_args) => decks::remove::run(Some(args.deck_id), sub_args, siv),
+                DeckCommands::Undo => decks::undo::run(Some(args.deck_id), siv),
             },
 
-            Commands::Study(args) => study::run(args),
+            Commands::Study(args) => study::run(args, siv),
         },
     }
 }
