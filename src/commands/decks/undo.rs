@@ -5,7 +5,10 @@ use inquire::Select;
 use crate::{config::get_config, deck::Log, progress::Progress};
 
 pub fn run(_deck_id: Option<String>) {
-    let config = get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     let deck_id = match _deck_id {
         Some(id) => {

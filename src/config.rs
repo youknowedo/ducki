@@ -3,6 +3,7 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs;
+use std::result::Result;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -27,26 +28,41 @@ impl fmt::Display for DeckEntry {
     }
 }
 
-pub fn get_config() -> Config {
+pub fn get_config() -> Result<Config, String> {
     let project_dirs = match ProjectDirs::from("dev", "sigfredo", "ducki") {
         Some(dirs) => dirs,
         None => {
-            panic!("Could not get project directories");
+            return Err("Could not find project directories".to_owned());
         }
     };
 
+    match fs::exists(project_dirs.config_dir().join("config.json")) {
+        Ok(exists) => {
+            if !exists {
+                return Ok(Config { decks: Vec::new() });
+            }
+        }
+        Err(err) => {
+            if err.kind() == std::io::ErrorKind::NotFound {
+                return Ok(Config { decks: Vec::new() });
+            } else {
+                panic!("Could not check if config file exists: {}", err);
+            }
+        }
+    }
+
     match fs::read_to_string(project_dirs.config_dir().join("config.json")) {
         Ok(contents) => match serde_json::from_str(&contents) {
-            Ok(config) => config,
+            Ok(config) => Ok(config),
             Err(err) => {
-                panic!("Could not parse config file: {}", err);
+                return Err(format!("Could not deserialize config: {}", err));
             }
         },
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
-                Config { decks: Vec::new() }
+                Ok(Config { decks: Vec::new() })
             } else {
-                panic!("Could not read config file: {}", err);
+                return Err("Could not read config file".to_owned());
             }
         }
     }

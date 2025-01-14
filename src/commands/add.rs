@@ -9,7 +9,10 @@ pub struct AddArgs {
 }
 
 pub fn run(args: AddArgs) {
-    let mut config = crate::config::get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     let current_basename = match current_dir() {
         Ok(dir) => dir

@@ -12,7 +12,10 @@ pub struct InitArgs {
 }
 
 pub fn run(args: InitArgs) {
-    let mut config = crate::config::get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     println!("{:?}", serde_json::to_string_pretty(&config));
 

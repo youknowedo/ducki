@@ -9,7 +9,10 @@ pub struct RemoveArgs {
 }
 
 pub fn run(args: RemoveArgs) {
-    let mut config = crate::config::get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     if config.decks.is_empty() {
         println!("No decks found.");

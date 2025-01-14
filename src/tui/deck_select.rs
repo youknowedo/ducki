@@ -7,7 +7,10 @@ use cursive::{
 use crate::tui;
 
 pub fn run(siv: &mut cursive::Cursive) {
-    let config = crate::config::get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     let mut select = SelectView::new().h_align(HAlign::Center).autojump();
 

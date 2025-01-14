@@ -1,5 +1,8 @@
 pub fn run(siv: &mut Option<&mut cursive::Cursive>) {
-    let config = crate::config::get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     match siv {
         Some(s) => {

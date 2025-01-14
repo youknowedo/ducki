@@ -15,7 +15,10 @@ pub struct StudyArgs {
 }
 
 pub fn run(args: StudyArgs) {
-    let config = crate::config::get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
     let now = Utc::now();
 
     if config.decks.is_empty() {

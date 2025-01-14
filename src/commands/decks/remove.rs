@@ -11,7 +11,10 @@ pub struct RemoveArgs {
 }
 
 pub fn run(_deck_id: Option<String>, args: RemoveArgs) {
-    let config = get_config();
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     let deck_id = match _deck_id {
         Some(id) => {
