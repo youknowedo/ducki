@@ -3,9 +3,9 @@ use std::{fs::{create_dir_all, exists}, path::Path};
 use cursive::{view::Resizable, views::{Dialog, TextView}};
 use uuid::Uuid;
 
-use crate::{deck::Deck, tui::init_deck::{select_id::select_id, InitData}, util::write_temp_file_with_siv};
+use crate::{deck::Deck, tui::init_deck::{select_id, InitData}, util::write_temp_file_with_siv};
 
-pub fn select_path(siv: &mut cursive::Cursive) {
+pub fn run(siv: &mut cursive::Cursive) {
     let default = match std::env::current_dir() {
         Ok(path) => path,
         Err(_) => std::path::PathBuf::from(""),
@@ -45,7 +45,7 @@ pub fn select_path(siv: &mut cursive::Cursive) {
 
                         let temp_file_id = Uuid::new_v4().to_string();
                         match write_temp_file_with_siv(s, &temp_file_id, &data) {
-                            Ok(_) => select_id(s, temp_file_id.clone()),
+                            Ok(_) => select_id::run(s, temp_file_id.clone()),
                             Err(err) => {
                                 s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
                             }
@@ -62,7 +62,7 @@ pub fn select_path(siv: &mut cursive::Cursive) {
                                     .title("Warning!")
                                     .button("Change path", |s| {
                                         s.pop_layer();
-                                        select_path(s);
+                                        run(s);
                                     })
                                     .button(
                                         "Overwrite",

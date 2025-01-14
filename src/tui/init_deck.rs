@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use crate::deck::Deck;
 
 mod select_path;
-use select_path::select_path;
 mod save_deck;
 mod select_description;
 mod select_id;
@@ -18,5 +17,5 @@ struct InitData<'a> {
 }
 
 pub fn run(siv: &mut cursive::Cursive) {
-    select_path(siv);
+    select_path::run(siv);
 }

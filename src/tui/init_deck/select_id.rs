@@ -1,5 +1,5 @@
 use crate::config::get_config;
-use crate::tui::init_deck::select_description::select_description;
+use crate::tui::init_deck::select_description;
 use crate::util::{read_temp_file_with_siv, write_temp_file_with_siv};
 use cursive::view::Resizable;
 use cursive::views::{Dialog, TextView};
@@ -7,7 +7,7 @@ use std::path::Path;
 
 use super::InitData;
 
-pub fn select_id(siv: &mut cursive::Cursive, temp_file_id: String) {
+pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
     let data = match read_temp_file_with_siv::<InitData>(siv, &temp_file_id) {
         Ok(data) => data,
         Err(err) => {
@@ -57,7 +57,7 @@ pub fn select_id(siv: &mut cursive::Cursive, temp_file_id: String) {
                             data.deck.id = id.to_string();
 
                             match write_temp_file_with_siv(s, id, &data) {
-                                Ok(_) => select_description(s, id.to_string()),
+                                Ok(_) => select_description::run(s, id.to_string()),
                                 Err(err) => {
                                     s.add_layer(Dialog::info(format!(
                                         "Something went wrong: {}",
@@ -87,7 +87,7 @@ pub fn select_id(siv: &mut cursive::Cursive, temp_file_id: String) {
                                         let temp_file_id = temp_file_id.clone();
                                         move |s| {
                                             s.pop_layer();
-                                            select_id(s, temp_file_id.clone());
+                                            run(s, temp_file_id.clone());
                                         }
                                     })
                                     .button("Overwrite", {

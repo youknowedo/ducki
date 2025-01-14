@@ -6,7 +6,7 @@ use cursive::views::Dialog;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn save_deck(siv: &mut cursive::Cursive, temp_data_path: String) {
+pub fn run(siv: &mut cursive::Cursive, temp_data_path: String) {
     let data = match read_temp_file_with_siv::<InitData>(siv, &temp_data_path) {
         Ok(data) => data,
         Err(err) => {

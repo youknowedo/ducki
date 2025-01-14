@@ -1,10 +1,10 @@
-use super::save_deck::save_deck;
+use super::save_deck;
 use super::InitData;
 use crate::util::{read_temp_file_with_siv, write_temp_file_with_siv};
 use cursive::view::Resizable;
 use cursive::views::{Dialog, EditView};
 
-pub fn select_description(siv: &mut cursive::Cursive, temp_file_id: String) {
+pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
     siv.add_layer(
         Dialog::around(
             EditView::new()
@@ -21,7 +21,7 @@ pub fn select_description(siv: &mut cursive::Cursive, temp_file_id: String) {
                     data.deck.description = description.to_string();
 
                     match write_temp_file_with_siv(s, &temp_file_id, &data) {
-                        Ok(_) => save_deck(s, temp_file_id.clone()),
+                        Ok(_) => save_deck::run(s, temp_file_id.clone()),
                         Err(err) => {
                             s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
                         }
