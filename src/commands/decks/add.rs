@@ -4,10 +4,7 @@ use clap::Parser;
 use cursive::views::Dialog;
 use inquire::{Select, Text};
 
-use crate::{
-    config::get_config,
-    deck::{Card, Deck},
-};
+use crate::deck::{Card, Deck};
 
 #[derive(Parser, Debug, Clone)]
 pub struct AddArgs {
@@ -27,7 +24,7 @@ pub fn run(_deck_id: Option<String>, args: AddArgs, siv: &mut Option<&mut cursiv
 }
 
 fn terminal(_deck_id: Option<String>, args: AddArgs) {
-    let mut config = match crate::config::get_config() {
+    let config = match crate::config::get_config() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -68,7 +65,9 @@ fn terminal(_deck_id: Option<String>, args: AddArgs) {
                     Err(err) => {
                         panic!("Could not get ID for card: {}", err);
                     }
-                }.trim().to_string();
+                }
+                .trim()
+                .to_string();
 
                 if id.is_empty() {
                     println!("ID cannot be empty. Please try again.");

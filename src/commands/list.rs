@@ -1,5 +1,5 @@
 pub fn run(siv: &mut Option<&mut cursive::Cursive>) {
-    let mut config = match crate::config::get_config() {
+    let config = match crate::config::get_config() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };

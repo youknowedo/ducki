@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use cursive::views::Dialog;
 use inquire::Select;
 
-use crate::{config::get_config, deck::Log, progress::Progress};
+use crate::{deck::Log, progress::Progress};
 
 pub fn run(_deck_id: Option<String>, siv: &mut Option<&mut cursive::Cursive>) {
     match siv {
@@ -13,7 +13,7 @@ pub fn run(_deck_id: Option<String>, siv: &mut Option<&mut cursive::Cursive>) {
 }
 
 fn terminal(_deck_id: Option<String>) {
-    let mut config = match crate::config::get_config() {
+    let config = match crate::config::get_config() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -94,6 +94,5 @@ fn terminal(_deck_id: Option<String>) {
         Err(err) => {
             panic!("Could not write logs file: {}", err);
         }
-        
     }
 }

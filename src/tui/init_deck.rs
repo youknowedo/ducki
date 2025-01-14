@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{deck::Deck, InitArgs};
+use crate::deck::Deck;
 
-mod select_path;
 mod save_deck;
 mod select_description;
 mod select_id;
+mod select_path;
 
 #[derive(Serialize, Deserialize)]
 struct InitData<'a> {

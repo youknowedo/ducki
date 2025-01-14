@@ -23,7 +23,7 @@ pub fn run(args: StudyArgs, siv: &mut Option<&mut cursive::Cursive>) {
 }
 
 fn terminal(args: StudyArgs) {
-    let mut config = match crate::config::get_config() {
+    let config = match crate::config::get_config() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
