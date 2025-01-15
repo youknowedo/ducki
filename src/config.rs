@@ -5,7 +5,7 @@ use std::fmt;
 use std::fs;
 use std::result::Result;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Config {
     pub decks: Vec<DeckEntry>,
 }

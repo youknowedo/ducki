@@ -8,12 +8,12 @@ mod select_id;
 mod select_path;
 
 #[derive(Serialize, Deserialize)]
-struct InitData<'a> {
+struct InitData {
     path: String,
     overwrite_file: bool,
     overwrite_path_in_config: bool,
     overwrite_id_in_config: bool,
-    deck: Deck<'a>,
+    deck: Deck,
 }
 
 pub fn run(siv: &mut cursive::Cursive, id: Option<String>) {

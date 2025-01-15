@@ -2,7 +2,6 @@ use std::{fs, path::Path};
 
 use chrono::Utc;
 use clap::Parser;
-use cursive::views::Dialog;
 use inquire::{Select, Text};
 use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating, FSRS};
 
@@ -10,14 +9,16 @@ use crate::deck::{Deck, Log};
 use crate::progress::{Progress, ProgressCard, Rating};
 use rand::seq::SliceRandom;
 
+use crate::tui::study::run as tui;
+
 #[derive(Parser, Debug, Clone)]
 pub struct StudyArgs {
-    id: Option<String>,
+    id: String,
 }
 
 pub fn run(args: StudyArgs, siv: &mut Option<&mut cursive::Cursive>) {
     match siv {
-        Some(s) => s.add_layer(Dialog::info("This command is not available in the TUI.")),
+        Some(s) => tui(s, args.id),
         None => terminal(args),
     }
 }
@@ -34,7 +35,7 @@ fn terminal(args: StudyArgs) {
         return;
     }
 
-    let deck_entry = match args.id {
+    let deck_entry = match Some(args.id) {
         Some(id) => match config.decks.iter().find(|deck| deck.id == id) {
             Some(deck) => deck.clone(),
             None => {
@@ -55,7 +56,7 @@ fn terminal(args: StudyArgs) {
     let deck: Deck = match fs::read_to_string(deck_path.join("deck.json")) {
         Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
             Ok(mut deck) => {
-                deck.config = Some(&config);
+                deck.config = Some(config);
 
                 deck
             }

@@ -6,6 +6,8 @@ use cursive::{
 
 use crate::tui;
 
+use super::study;
+
 pub fn run(siv: &mut cursive::Cursive) {
     let config = match crate::config::get_config() {
         Ok(config) => config,
@@ -28,5 +30,7 @@ fn select_deck(siv: &mut cursive::Cursive, id: &str) {
         tui::init_deck::run(siv, None)
     } else {
         siv.pop_layer();
+
+        study::run(siv, id.to_string());
     }
 }

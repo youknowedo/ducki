@@ -26,7 +26,7 @@ fn terminal(args: InitArgs) {
         Err(err) => panic!("Could not get config: {}", err),
     };
 
-    println!("{:?}", serde_json::to_string_pretty(&config));
+    println!("{:?}", serde_json::to_string_pretty(&config.clone()));
 
     let mut id = match args.id {
         Some(id) => id,
@@ -91,7 +91,7 @@ fn terminal(args: InitArgs) {
     }
 
     let deck = crate::deck::Deck {
-        config: Some(&config),
+        config: Some(config.clone()),
         id: id.clone(),
         description: match Text::new("What description should the new deck have?").prompt() {
             Ok(description) => description,
