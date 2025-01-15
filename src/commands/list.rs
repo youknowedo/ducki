@@ -1,3 +1,5 @@
+use crate::tui::deck_select;
+
 pub fn run(siv: &mut Option<&mut cursive::Cursive>) {
     let config = match crate::config::get_config() {
         Ok(config) => config,
@@ -6,9 +8,7 @@ pub fn run(siv: &mut Option<&mut cursive::Cursive>) {
 
     match siv {
         Some(s) => {
-            s.call_on_name("content", |v: &mut cursive::views::TextView| {
-                v.set_content("");
-            });
+            deck_select::run(s);
         }
         None => {}
     }
