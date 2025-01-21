@@ -1,5 +1,3 @@
-use std::fs;
-
 use cursive::{
     view::{Nameable, Resizable},
     views::{Dialog, EditView, LinearLayout, TextView},
@@ -8,28 +6,10 @@ use cursive::{
 use crate::deck::Deck;
 
 pub fn run(siv: &mut cursive::Cursive, deck_id: String) {
-    let config = match crate::config::get_config() {
-        Ok(config) => config,
-        Err(err) => panic!("Could not get config: {}", err),
-    };
-
-    let deck_entry = match config.decks.iter().find(|deck| deck.id == deck_id.clone()) {
-        Some(deck) => deck.clone(),
-        None => return,
-    };
-
-    let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-    let deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
-        Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
-            Ok(deck) => deck,
-            Err(err) => {
-                siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
-                return;
-            }
-        },
-        Err(err) => {
-            siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
+    let deck = match Deck::get(deck_id.clone()) {
+        Ok(deck) => deck,
+        Err(e) => {
+            siv.add_layer(Dialog::info(format!("Could not get deck: {}", e)));
             return;
         }
     };
@@ -65,34 +45,10 @@ pub fn run(siv: &mut cursive::Cursive, deck_id: String) {
             let deck_id = deck_id.clone();
 
             move |s| {
-                let config = match crate::config::get_config() {
-                    Ok(config) => config,
-                    Err(err) => {
-                        s.add_layer(Dialog::info(format!("Could not get config: {}", err)));
-                        return;
-                    }
-                };
-
-                let deck_entry = match config.decks.iter().find(|deck| deck.id == deck_id.clone()) {
-                    Some(deck) => deck.clone(),
-                    None => {
-                        s.add_layer(Dialog::info("Could not find deck in config"));
-                        return;
-                    }
-                };
-
-                let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-                let mut deck: Deck = match fs::read_to_string(deck_path.join("deck.json")) {
-                    Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
-                        Ok(deck) => deck,
-                        Err(err) => {
-                            s.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
-                            return;
-                        }
-                    },
-                    Err(err) => {
-                        s.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
+                let mut deck = match Deck::get(deck_id.clone()) {
+                    Ok(deck) => deck,
+                    Err(e) => {
+                        s.add_layer(Dialog::info(format!("Could not get deck: {}", e)));
                         return;
                     }
                 };
@@ -107,21 +63,13 @@ pub fn run(siv: &mut cursive::Cursive, deck_id: String) {
                 deck.id = id.to_string();
                 deck.description = description.to_string();
 
-                let deck_as_string = match serde_json::to_string(&deck) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        s.add_layer(Dialog::info(format!("Could not serialize deck: {}", err)));
-                        return;
-                    }
-                };
-
-                match fs::write(deck_path.join("deck.json"), deck_as_string) {
+                match deck.save() {
                     Ok(_) => {}
                     Err(err) => {
-                        s.add_layer(Dialog::info(format!("Could not write deck file: {}", err)));
+                        s.add_layer(Dialog::info(format!("Could not save deck: {}", err)));
                         return;
                     }
-                };
+                }
 
                 s.pop_layer();
             }

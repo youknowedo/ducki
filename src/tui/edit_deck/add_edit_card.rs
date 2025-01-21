@@ -16,33 +16,13 @@ pub fn edit(siv: &mut Cursive, deck_id: String, card_id: String) {
 }
 
 fn _add_edit_card(siv: &mut Cursive, deck_id: String, card_id: Option<String>) {
-    let config = match crate::config::get_config() {
-        Ok(config) => config,
-        Err(err) => panic!("Could not get config: {}", err),
-    };
-
-    let deck_entry = match config.decks.iter().find(|deck| deck.id == deck_id.clone()) {
-        Some(deck) => deck.clone(),
-        None => return,
-    };
-
-    let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-    let mut deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
-        Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
-            Ok(deck) => deck,
-            Err(err) => {
-                siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
-                return;
-            }
-        },
-        Err(err) => {
-            siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
+    let deck = match Deck::get(deck_id.clone()) {
+        Ok(deck) => deck,
+        Err(e) => {
+            siv.add_layer(Dialog::info(format!("Could not get deck: {}", e)));
             return;
         }
     };
-
-    deck.config = Some(config);
 
     let default: Option<Card> = match card_id.clone() {
         Some(id) => deck.cards.iter().find(|card| card.id == id).cloned(),
@@ -100,11 +80,6 @@ fn _add_edit_card(siv: &mut Cursive, deck_id: String, card_id: Option<String>) {
                 };
 
                 move |siv| {
-                    let config = match crate::config::get_config() {
-                        Ok(config) => config,
-                        Err(err) => panic!("Could not get config: {}", err),
-                    };
-
                     let front = siv
                         .call_on_name("front", |view: &mut EditView| view.get_content())
                         .unwrap()
@@ -120,36 +95,13 @@ fn _add_edit_card(siv: &mut Cursive, deck_id: String, card_id: Option<String>) {
                         back,
                     };
 
-                    let deck_entry =
-                        match config.decks.iter().find(|deck| deck.id == deck_id.clone()) {
-                            Some(deck) => deck.clone(),
-                            None => return,
-                        };
-
-                    let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-                    let mut deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json"))
-                    {
-                        Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
-                            Ok(deck) => deck,
-                            Err(err) => {
-                                siv.add_layer(Dialog::info(format!(
-                                    "Could not read deck file: {}",
-                                    err
-                                )));
-                                return;
-                            }
-                        },
-                        Err(err) => {
-                            siv.add_layer(Dialog::info(format!(
-                                "Could not read deck file: {}",
-                                err
-                            )));
+                    let mut deck = match Deck::get(deck_id.clone()) {
+                        Ok(deck) => deck,
+                        Err(e) => {
+                            siv.add_layer(Dialog::info(format!("Could not get deck: {}", e)));
                             return;
                         }
                     };
-
-                    deck.config = Some(config);
 
                     if is_edit {
                         deck.cards = deck
@@ -167,8 +119,13 @@ fn _add_edit_card(siv: &mut Cursive, deck_id: String, card_id: Option<String>) {
                         deck.cards.push(card);
                     }
 
-                    let deck_json = serde_json::to_string_pretty(&deck).unwrap();
-                    std::fs::write(deck_path.join("deck.json"), deck_json).unwrap();
+                    match deck.save() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            siv.add_layer(Dialog::info(format!("Could not save deck: {}", e)));
+                            return;
+                        }
+                    };
 
                     siv.pop_layer();
 

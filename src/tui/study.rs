@@ -223,32 +223,15 @@ fn setup_deck<'a>(id: String) -> Result<(Deck, String), Error> {
 
     let deck_path = std::path::Path::new(deck_entry.path.as_str());
 
-    let mut deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
-        Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
-            Ok(deck) => deck,
-            Err(err) => {
-                return Err(Error {
-                    kind: ErrorKind::Parse,
-                    message: format!("Could not parse deck file: {}", err),
-                });
-            }
-        },
+    let deck = match Deck::get(id) {
+        Ok(deck) => deck,
         Err(err) => {
-            if err.kind() == std::io::ErrorKind::NotFound {
-                return Err(Error {
-                    kind: ErrorKind::NotFound,
-                    message: "Deck file not found.".to_string(),
-                });
-            } else {
-                return Err(Error {
-                    kind: ErrorKind::Io,
-                    message: format!("Could not read deck file: {}", err),
-                });
-            }
+            return Err(Error {
+                kind: ErrorKind::Io,
+                message: format!("Could not get deck: {}", err),
+            });
         }
     };
-
-    deck.config = Some(config);
 
     Ok((deck, deck_path.to_str().unwrap().to_string()))
 }

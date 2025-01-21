@@ -19,6 +19,58 @@ pub struct Deck {
 }
 
 impl Deck {
+    pub fn get(id: String) -> Result<Deck, String> {
+        let config = match crate::config::get_config() {
+            Ok(config) => config,
+            Err(err) => return Err(format!("Could not get config: {}", err)),
+        };
+
+        let deck_entry = match config.decks.iter().find(|deck| deck.id == id) {
+            Some(deck) => deck.clone(),
+            None => return Err("Deck not found in config.".to_string()),
+        };
+
+        let deck_path = std::path::Path::new(deck_entry.path.as_str());
+
+        let deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
+            Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
+                Ok(deck) => deck,
+                Err(err) => {
+                    return Err(format!("Could not parse deck file: {}", err));
+                }
+            },
+            Err(err) => {
+                if err.kind() == std::io::ErrorKind::NotFound {
+                    return Err("Deck file not found.".to_string());
+                } else {
+                    return Err(format!("Could not read deck file: {}", err));
+                }
+            }
+        };
+
+        Ok(deck)
+    }
+
+    pub fn save(&self) -> Result<(), String> {
+        let deck_path = std::path::Path::new(self.config.as_ref().unwrap().decks[0].path.as_str());
+
+        let deck_as_string = match serde_json::to_string(&self) {
+            Ok(json) => json,
+            Err(err) => {
+                return Err(format!("Could not serialize deck: {}", err));
+            }
+        };
+
+        match fs::write(deck_path.join("deck.json"), deck_as_string) {
+            Ok(_) => {}
+            Err(err) => {
+                return Err(format!("Could not write deck file: {}", err));
+            }
+        };
+
+        Ok(())
+    }
+
     fn logs_path(&self, deck_id: String) -> PathBuf {
         match &self.config {
             None => panic!("Deck config not set."),

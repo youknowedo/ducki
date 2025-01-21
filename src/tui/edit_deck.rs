@@ -11,38 +11,18 @@ mod add_edit_card;
 mod edit_details;
 
 pub fn run(siv: &mut cursive::Cursive, deck_id: String) {
-    let config = match crate::config::get_config() {
-        Ok(config) => config,
-        Err(err) => panic!("Could not get config: {}", err),
-    };
-
     let mut select = SelectView::new()
         .h_align(HAlign::Center)
         .autojump()
         .with_name("select");
 
-    let deck_entry = match config.decks.iter().find(|deck| deck.id == deck_id) {
-        Some(deck) => deck.clone(),
-        None => return,
-    };
-
-    let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-    let mut deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
-        Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
-            Ok(deck) => deck,
-            Err(err) => {
-                siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
-                return;
-            }
-        },
+    let deck = match Deck::get(deck_id.clone()) {
+        Ok(deck) => deck,
         Err(err) => {
-            siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
+            siv.add_layer(Dialog::info(format!("Could not get deck: {}", err)));
             return;
         }
     };
-
-    deck.config = Some(config);
 
     let mut select_mut = select.get_mut();
 
@@ -119,35 +99,20 @@ fn delete_card(siv: &mut cursive::Cursive, deck_id: String) {
 
     siv.pop_layer();
 
-    let deck_entry = match config.decks.iter().find(|deck| deck.id == deck_id) {
-        Some(deck) => deck.clone(),
-        None => return,
-    };
-
-    let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-    let mut deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
-        Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
-            Ok(deck) => deck,
-            Err(err) => {
-                siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
-                return;
-            }
-        },
+    let mut deck = match Deck::get(deck_id.clone()) {
+        Ok(deck) => deck,
         Err(err) => {
-            siv.add_layer(Dialog::info(format!("Could not read deck file: {}", err)));
+            siv.add_layer(Dialog::info(format!("Could not get deck: {}", err)));
             return;
         }
     };
 
-    deck.config = Some(config);
-
     deck.cards.retain(|card| card.id != id);
 
-    match std::fs::write(deck_path.join("deck.json"), json!(deck).to_string()) {
+    match deck.save() {
         Ok(_) => {}
         Err(err) => {
-            siv.add_layer(Dialog::info(format!("Could not write deck file: {}", err)));
+            siv.add_layer(Dialog::info(format!("Could not save deck: {}", err)));
             return;
         }
     };
