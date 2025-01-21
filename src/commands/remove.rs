@@ -12,7 +12,13 @@ pub struct RemoveArgs {
 pub fn run(args: RemoveArgs, siv: &mut Option<&mut cursive::Cursive>) {
     match siv {
         Some(s) => s.add_layer(Dialog::info("This command is not available in the TUI.")),
-        None => terminal(args),
+        None => {
+            match siv {
+                Some(s) => s.quit(),
+                None => {}
+            }
+            terminal(args)
+        }
     }
 }
 

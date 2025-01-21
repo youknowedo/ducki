@@ -16,7 +16,13 @@ pub struct InitArgs {
 pub fn run(args: InitArgs, siv: &mut Option<&mut cursive::Cursive>) {
     match siv {
         Some(s) => tui(s, args.id),
-        None => terminal(args),
+        None => {
+            match siv {
+                Some(s) => s.quit(),
+                None => {}
+            }
+            terminal(args)
+        }
     }
 }
 
