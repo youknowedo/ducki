@@ -1,21 +1,35 @@
-use clap::Subcommand;
+use clap::{command, Parser, Subcommand};
 
 mod decks;
-use decks::{DeckCommands, DeckArgs};
+use decks::{DeckArgs, DeckCommands};
 
+mod default;
 mod add;
-use add::AddArgs;
+pub use add::AddArgs;
 mod init;
-use init::InitArgs;
+pub use init::InitArgs;
 mod remove;
-use remove::RemoveArgs;
+pub use remove::RemoveArgs;
+mod help;
 mod list;
 
 mod study;
 use study::StudyArgs;
 
+use crate::tui;
+
+#[derive(Parser, Debug)]
+#[command(author("Sigfredo"), version("v0.0.2"), about, long_about = None, disable_help_flag = true, disable_help_subcommand = true)] // Disable default help flag
+pub struct Args {
+    #[command(subcommand)]
+    pub cmd: Option<Commands>,
+}
+
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
+    #[command(name = "help", about = "Print help information")]
+    Help,
+
     #[command(name = "list", alias = "ls", about = "List all decks")]
     List,
 
@@ -48,18 +62,31 @@ pub enum Commands {
     Deck(DeckArgs),
 }
 
-pub fn run_command(cmd: Commands) {
+pub fn run_command(cmd: Option<Commands>, siv: &mut Option<&mut cursive::Cursive>) {
     match cmd {
-        Commands::List => list::run(),
-        Commands::Init(args) => init::run(args),
-        Commands::Add(args) => add::run(args),
-        Commands::Remove(args) => remove::run(args),
-        Commands::Deck(args) => match args.cmd {
-            DeckCommands::Add(sub_args) => decks::add::run(Some(args.deck_id), sub_args),
-            DeckCommands::Remove(sub_args) => decks::remove::run(Some(args.deck_id), sub_args),
-            DeckCommands::Undo => decks::undo::run(Some(args.deck_id)),
-        },
+        None => match siv {
+            Some(s) => default::run(s),
+            None => {
+                let mut siv = cursive::default();
 
-        Commands::Study(args) => study::run(args),
+                tui::setup(&mut siv);
+
+                default::run(&mut siv)
+            }
+        },
+        Some(cmd) => match cmd {
+            Commands::Help => help::run(siv),
+            Commands::List => list::run(siv),
+            Commands::Init(args) => init::run(args, siv),
+            Commands::Add(args) => add::run(args, siv),
+            Commands::Remove(args) => remove::run(args, siv),
+            Commands::Deck(args) => match args.cmd {
+                DeckCommands::Add(sub_args) => decks::add::run(Some(args.deck_id), sub_args, siv),
+                DeckCommands::Remove(sub_args) => decks::remove::run(Some(args.deck_id), sub_args, siv),
+                DeckCommands::Undo => decks::undo::run(Some(args.deck_id), siv),
+            },
+
+            Commands::Study(args) => study::run(args, siv),
+        },
     }
 }

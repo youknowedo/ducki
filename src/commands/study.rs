@@ -9,13 +9,31 @@ use crate::deck::{Deck, Log};
 use crate::progress::{Progress, ProgressCard, Rating};
 use rand::seq::SliceRandom;
 
+use crate::tui::study::run as tui;
+
 #[derive(Parser, Debug, Clone)]
 pub struct StudyArgs {
-    id: Option<String>,
+    id: String,
 }
 
-pub fn run(args: StudyArgs) {
-    let config = crate::config::get_config();
+pub fn run(args: StudyArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => tui(s, args.id),
+        None => {
+            match siv {
+                Some(s) => s.quit(),
+                None => {}
+            }
+            terminal(args)
+        }
+    }
+}
+
+fn terminal(args: StudyArgs) {
+    let config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
     let now = Utc::now();
 
     if config.decks.is_empty() {
@@ -23,7 +41,7 @@ pub fn run(args: StudyArgs) {
         return;
     }
 
-    let deck_entry = match args.id {
+    let deck_entry = match Some(args.id) {
         Some(id) => match config.decks.iter().find(|deck| deck.id == id) {
             Some(deck) => deck.clone(),
             None => {
@@ -44,7 +62,7 @@ pub fn run(args: StudyArgs) {
     let deck: Deck = match fs::read_to_string(deck_path.join("deck.json")) {
         Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
             Ok(mut deck) => {
-                deck.config = Some(&config);
+                deck.config = Some(config);
 
                 deck
             }

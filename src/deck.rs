@@ -9,18 +9,18 @@ use serde::{Deserialize, Serialize};
 use crate::{config::Config, progress::ProgressCard};
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Deck<'a> {
+pub struct Deck {
     #[serde(skip_serializing, skip_deserializing)]
-    pub config: Option<&'a Config>,
+    pub config: Option<Config>,
 
     pub id: String,
     pub description: String,
     pub cards: Vec<Card>,
 }
 
-impl Deck<'_> {
+impl Deck {
     fn logs_path(&self, deck_id: String) -> PathBuf {
-        match self.config {
+        match &self.config {
             None => panic!("Deck config not set."),
             Some(config) => match config.decks.iter().find(|deck| deck.id == deck_id) {
                 Some(deck) => Path::new(deck.path.as_str()).join(".logs.json"),
@@ -69,7 +69,7 @@ impl Deck<'_> {
     }
 }
 
-impl Default for Deck<'_> {
+impl Default for Deck {
     fn default() -> Self {
         Deck {
             config: None,

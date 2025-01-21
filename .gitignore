@@ -1,3 +1,7 @@
-# Added by cargo
+# Deck files
+deck.json
+.logs.json
+.progress.json
 
+# Added by cargo
 /target

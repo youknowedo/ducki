@@ -6,13 +6,33 @@ use std::{
 use clap::Parser;
 use inquire::{Confirm, Text};
 
+use crate::tui::init_deck::run as tui;
+
 #[derive(Parser, Debug, Clone)]
 pub struct InitArgs {
     id: Option<String>,
 }
 
-pub fn run(args: InitArgs) {
-    let mut config = crate::config::get_config();
+pub fn run(args: InitArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => tui(s, args.id),
+        None => {
+            match siv {
+                Some(s) => s.quit(),
+                None => {}
+            }
+            terminal(args)
+        }
+    }
+}
+
+fn terminal(args: InitArgs) {
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
+
+    println!("{:?}", serde_json::to_string_pretty(&config.clone()));
 
     let mut id = match args.id {
         Some(id) => id,
@@ -77,7 +97,7 @@ pub fn run(args: InitArgs) {
     }
 
     let deck = crate::deck::Deck {
-        config: Some(&config),
+        config: Some(config.clone()),
         id: id.clone(),
         description: match Text::new("What description should the new deck have?").prompt() {
             Ok(description) => description,

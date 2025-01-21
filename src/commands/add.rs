@@ -1,6 +1,7 @@
 use std::env::current_dir;
 
 use clap::Parser;
+use cursive::views::Dialog;
 use inquire::Confirm;
 
 #[derive(Parser, Debug, Clone)]
@@ -8,8 +9,24 @@ pub struct AddArgs {
     id: Option<String>,
 }
 
-pub fn run(args: AddArgs) {
-    let mut config = crate::config::get_config();
+pub fn run(args: AddArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => s.add_layer(Dialog::info("This command is not available in the TUI.")),
+        None => {
+            // exit cursive
+            match siv {
+                Some(s) => s.quit(),
+                None => {}
+            }
+            terminal(args)},
+    }
+}
+
+fn terminal(args: AddArgs) {
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     let current_basename = match current_dir() {
         Ok(dir) => dir

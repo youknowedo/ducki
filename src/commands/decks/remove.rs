@@ -1,17 +1,28 @@
 use std::{fs, path::Path};
 
 use clap::Parser;
+use cursive::views::Dialog;
 use inquire::{Confirm, Select, Text};
 
-use crate::{config::get_config, deck::Deck};
+use crate::deck::Deck;
 
 #[derive(Parser, Debug, Clone)]
 pub struct RemoveArgs {
     pub id: Option<String>,
 }
 
-pub fn run(_deck_id: Option<String>, args: RemoveArgs) {
-    let config = get_config();
+pub fn run(_deck_id: Option<String>, args: RemoveArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => s.add_layer(Dialog::info("This command is not available in the TUI.")),
+        None => terminal(_deck_id, args),
+    }
+}
+
+fn terminal(_deck_id: Option<String>, args: RemoveArgs) {
+    let config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     let deck_id = match _deck_id {
         Some(id) => {

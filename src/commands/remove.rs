@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use clap::Parser;
+use cursive::views::Dialog;
 use inquire::{Confirm, Select};
 
 #[derive(Parser, Debug, Clone)]
@@ -8,8 +9,24 @@ pub struct RemoveArgs {
     id: Option<String>,
 }
 
-pub fn run(args: RemoveArgs) {
-    let mut config = crate::config::get_config();
+pub fn run(args: RemoveArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => s.add_layer(Dialog::info("This command is not available in the TUI.")),
+        None => {
+            match siv {
+                Some(s) => s.quit(),
+                None => {}
+            }
+            terminal(args)
+        }
+    }
+}
+
+fn terminal(args: RemoveArgs) {
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     if config.decks.is_empty() {
         println!("No decks found.");

@@ -1,12 +1,10 @@
 use std::{fs, path::Path};
 
 use clap::Parser;
+use cursive::views::Dialog;
 use inquire::{Select, Text};
 
-use crate::{
-    config::get_config,
-    deck::{Card, Deck},
-};
+use crate::deck::{Card, Deck};
 
 #[derive(Parser, Debug, Clone)]
 pub struct AddArgs {
@@ -18,8 +16,18 @@ pub struct AddArgs {
     pub back: Option<String>,
 }
 
-pub fn run(_deck_id: Option<String>, args: AddArgs) {
-    let config = get_config();
+pub fn run(_deck_id: Option<String>, args: AddArgs, siv: &mut Option<&mut cursive::Cursive>) {
+    match siv {
+        Some(s) => s.add_layer(Dialog::info("This command is not available in the TUI.")),
+        None => terminal(_deck_id, args),
+    }
+}
+
+fn terminal(_deck_id: Option<String>, args: AddArgs) {
+    let config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
 
     let deck_id = match _deck_id {
         Some(id) => {
@@ -57,7 +65,9 @@ pub fn run(_deck_id: Option<String>, args: AddArgs) {
                     Err(err) => {
                         panic!("Could not get ID for card: {}", err);
                     }
-                }.trim().to_string();
+                }
+                .trim()
+                .to_string();
 
                 if id.is_empty() {
                     println!("ID cannot be empty. Please try again.");
