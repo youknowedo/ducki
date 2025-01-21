@@ -5,6 +5,7 @@ use clap::Parser;
 use inquire::{Select, Text};
 use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating, FSRS};
 
+use crate::config::Config;
 use crate::deck::{Deck, Log};
 use crate::progress::{Progress, ProgressCard, Rating};
 use rand::seq::SliceRandom;
@@ -30,7 +31,7 @@ pub fn run(args: StudyArgs, siv: &mut Option<&mut cursive::Cursive>) {
 }
 
 fn terminal(args: StudyArgs) {
-    let config = match crate::config::get_config() {
+    let config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };

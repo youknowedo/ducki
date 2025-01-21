@@ -4,7 +4,7 @@ use clap::Parser;
 use cursive::views::Dialog;
 use inquire::{Confirm, Select, Text};
 
-use crate::deck::Deck;
+use crate::{config::Config, deck::Deck};
 
 #[derive(Parser, Debug, Clone)]
 pub struct RemoveArgs {
@@ -19,7 +19,7 @@ pub fn run(_deck_id: Option<String>, args: RemoveArgs, siv: &mut Option<&mut cur
 }
 
 fn terminal(_deck_id: Option<String>, args: RemoveArgs) {
-    let config = match crate::config::get_config() {
+    let config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -48,7 +48,7 @@ fn terminal(_deck_id: Option<String>, args: RemoveArgs) {
         panic!("Deck not found in path: {}", deck_path.display());
     }
 
-    let mut new_deck = match fs::read_to_string(&deck_path) {
+    let mut deck = match fs::read_to_string(&deck_path) {
         Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
             Ok(deck) => deck,
             Err(err) => {
@@ -70,7 +70,7 @@ fn terminal(_deck_id: Option<String>, args: RemoveArgs) {
         },
     };
 
-    new_deck.cards.retain(|card| card.id != id);
+    deck.cards.retain(|card| card.id != id);
 
     if match Confirm::new("Are you sure you want to remove this card?").prompt() {
         Ok(confirmation) => confirmation,
@@ -78,10 +78,12 @@ fn terminal(_deck_id: Option<String>, args: RemoveArgs) {
             panic!("Could not get confirmation: {}", err);
         }
     } {
-        match fs::write(&deck_path, serde_json::to_string(&new_deck).unwrap()) {
-            Ok(_) => {}
+        match deck.save() {
+            Ok(_) => {
+                println!("Card removed.");
+            }
             Err(err) => {
-                panic!("Could not write deck file: {}", err);
+                panic!("Could not save deck: {}", err);
             }
         }
     }

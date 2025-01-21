@@ -4,6 +4,8 @@ use clap::Parser;
 use cursive::views::Dialog;
 use inquire::{Confirm, Select};
 
+use crate::config::Config;
+
 #[derive(Parser, Debug, Clone)]
 pub struct RemoveArgs {
     id: Option<String>,
@@ -23,7 +25,7 @@ pub fn run(args: RemoveArgs, siv: &mut Option<&mut cursive::Cursive>) {
 }
 
 fn terminal(args: RemoveArgs) {
-    let mut config = match crate::config::get_config() {
+    let mut config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -59,7 +61,10 @@ fn terminal(args: RemoveArgs) {
 
     config.decks.retain(|deck| deck.id != id);
 
-    crate::config::save_config(config);
+    match config.save() {
+        Ok(_) => {}
+        Err(err) => panic!("Could not save config: {}", err),
+    };
 
     if !Path::new(&path).exists() {
         return;

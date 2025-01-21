@@ -3,7 +3,6 @@ use cursive::{
     view::{Nameable, Resizable, Scrollable},
     views::{Button, Dialog, DummyView, LinearLayout, SelectView},
 };
-use serde_json::json;
 
 use crate::deck::Deck;
 
@@ -80,11 +79,6 @@ fn edit_deck(siv: &mut cursive::Cursive, deck_id: String) {
 }
 
 fn delete_card(siv: &mut cursive::Cursive, deck_id: String) {
-    let config = match crate::config::get_config() {
-        Ok(config) => config,
-        Err(err) => panic!("Could not get config: {}", err),
-    };
-
     let id = match siv
         .call_on_name("select", |view: &mut SelectView| view.selection())
         .unwrap()

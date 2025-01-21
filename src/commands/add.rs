@@ -4,6 +4,8 @@ use clap::Parser;
 use cursive::views::Dialog;
 use inquire::Confirm;
 
+use crate::config::Config;
+
 #[derive(Parser, Debug, Clone)]
 pub struct AddArgs {
     id: Option<String>,
@@ -23,7 +25,7 @@ pub fn run(args: AddArgs, siv: &mut Option<&mut cursive::Cursive>) {
 }
 
 fn terminal(args: AddArgs) {
-    let mut config = match crate::config::get_config() {
+    let mut config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -68,5 +70,8 @@ fn terminal(args: AddArgs) {
         id,
         path: path.to_str().unwrap().to_string(),
     });
-    crate::config::save_config(config);
+    match config.save() {
+        Ok(_) => {}
+        Err(err) => panic!("Could not save config: {}", err),
+    };
 }

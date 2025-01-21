@@ -1,4 +1,4 @@
-use crate::config::get_config;
+use crate::config::Config;
 use crate::tui::init_deck::select_description;
 use crate::util::{read_temp_file_with_siv, write_temp_file_with_siv};
 use cursive::view::Resizable;
@@ -69,7 +69,7 @@ pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
 
                         data.deck.id = id.to_string();
 
-                        let config = match get_config() {
+                        let config = match Config::get() {
                             Ok(config) => config,
                             Err(err) => {
                                 s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));

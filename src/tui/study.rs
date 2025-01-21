@@ -1,6 +1,5 @@
 use crate::{
-    deck::{Card, Deck, Log},
-    progress::{Progress, ProgressCard, Rating},
+    config::Config, deck::{Card, Deck, Log}, progress::{Progress, ProgressCard, Rating}
 };
 use chrono::Utc;
 use cursive::{
@@ -201,7 +200,7 @@ fn update_progress(
 }
 
 fn setup_deck<'a>(id: String) -> Result<(Deck, String), Error> {
-    let config = match crate::config::get_config() {
+    let config = match Config::get() {
         Ok(config) => config,
         Err(err) => {
             return Err(Error {

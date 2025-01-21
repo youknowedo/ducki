@@ -1,7 +1,7 @@
-use crate::tui::deck_select;
+use crate::{config::Config, tui::deck_select};
 
 pub fn run(siv: &mut Option<&mut cursive::Cursive>) {
-    let config = match crate::config::get_config() {
+    let config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };

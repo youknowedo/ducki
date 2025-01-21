@@ -1,5 +1,5 @@
 use super::InitData;
-use crate::config::{save_config_with_siv, DeckEntry};
+use crate::config::{Config, DeckEntry};
 use crate::tui::deck_select;
 use crate::util::read_temp_file_with_siv;
 use cursive::views::Dialog;
@@ -26,23 +26,15 @@ pub fn run(siv: &mut cursive::Cursive, temp_data_path: String) {
 
     let deck = data.deck;
 
-    let deck_as_string = match serde_json::to_string(&deck) {
-        Ok(json) => json,
-        Err(err) => {
-            siv.add_layer(Dialog::info(format!("Could not serialize deck: {}", err)));
-            return;
-        }
-    };
-
-    match fs::write(path.join("deck.json"), deck_as_string) {
+    match deck.save() {
         Ok(_) => {}
         Err(err) => {
             siv.add_layer(Dialog::info(format!("Could not write deck file: {}", err)));
             return;
         }
-    };
+    }
 
-    let mut config = match crate::config::get_config() {
+    let mut config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -52,7 +44,14 @@ pub fn run(siv: &mut cursive::Cursive, temp_data_path: String) {
         path: data.path.clone(),
     });
 
-    save_config_with_siv(siv, config);
-
-    deck_select::run(siv);
+    match config.save() {
+        Ok(_) => deck_select::run(siv),
+        Err(err) => {
+            siv.add_layer(Dialog::info(format!(
+                "Could not write config file: {}",
+                err
+            )));
+            return;
+        }
+    }
 }

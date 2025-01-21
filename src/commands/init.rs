@@ -1,12 +1,9 @@
-use std::{
-    env::current_dir,
-    fs::{self, create_dir_all},
-};
+use std::{env::current_dir, fs::create_dir_all};
 
 use clap::Parser;
 use inquire::{Confirm, Text};
 
-use crate::tui::init_deck::run as tui;
+use crate::{config::Config, tui::init_deck::run as tui};
 
 #[derive(Parser, Debug, Clone)]
 pub struct InitArgs {
@@ -27,7 +24,7 @@ pub fn run(args: InitArgs, siv: &mut Option<&mut cursive::Cursive>) {
 }
 
 fn terminal(args: InitArgs) {
-    let mut config = match crate::config::get_config() {
+    let mut config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -106,11 +103,10 @@ fn terminal(args: InitArgs) {
         cards: Vec::new(),
     };
 
-    fs::write(
-        path.join("deck.json"),
-        serde_json::to_string(&deck).unwrap(),
-    )
-    .unwrap();
+   match deck.save() {
+        Ok(_) => {}
+        Err(err) => panic!("Could not save deck: {}", err),
+   };
 
     let deck_entry = crate::config::DeckEntry {
         id,
@@ -119,5 +115,8 @@ fn terminal(args: InitArgs) {
 
     config.decks.push(deck_entry);
 
-    crate::config::save_config(config);
+    match config.save() {
+        Ok(_) => {}
+        Err(err) => panic!("Could not save config: {}", err),
+    };
 }

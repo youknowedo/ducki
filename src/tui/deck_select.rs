@@ -4,12 +4,12 @@ use cursive::{
     views::{Button, Dialog, DummyView, LinearLayout, SelectView},
 };
 
-use crate::{config::save_config_with_siv, tui};
+use crate::{config::Config, tui};
 
 use super::{edit_deck, study};
 
 pub fn run(siv: &mut cursive::Cursive) {
-    let config = match crate::config::get_config() {
+    let config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -61,7 +61,8 @@ fn edit(siv: &mut cursive::Cursive) {
             siv.add_layer(Dialog::info("No deck selected"));
             return;
         }
-    }.to_string();
+    }
+    .to_string();
 
     siv.pop_layer();
 
@@ -69,7 +70,7 @@ fn edit(siv: &mut cursive::Cursive) {
 }
 
 fn delete_deck(siv: &mut cursive::Cursive) {
-    let mut config = match crate::config::get_config() {
+    let mut config = match Config::get() {
         Ok(config) => config,
         Err(err) => panic!("Could not get config: {}", err),
     };
@@ -83,13 +84,17 @@ fn delete_deck(siv: &mut cursive::Cursive) {
             siv.add_layer(Dialog::info("No deck selected"));
             return;
         }
-    }.to_string();
+    }
+    .to_string();
 
     siv.pop_layer();
 
     config.decks.retain(|deck| deck.id != id);
 
-    save_config_with_siv(siv, config);
-
-    run(siv);
+    match config.save() {
+        Ok(_) => run(siv),
+        Err(err) => {
+            siv.add_layer(Dialog::info(format!("Could not delete deck: {}", err)));
+        }
+    }
 }

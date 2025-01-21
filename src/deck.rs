@@ -20,7 +20,7 @@ pub struct Deck {
 
 impl Deck {
     pub fn get(id: String) -> Result<Deck, String> {
-        let config = match crate::config::get_config() {
+        let config = match Config::get() {
             Ok(config) => config,
             Err(err) => return Err(format!("Could not get config: {}", err)),
         };
