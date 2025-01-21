@@ -1,20 +1,12 @@
 use crate::config::Config;
 use crate::tui::init_deck::select_description;
-use crate::util::{read_temp_file_with_siv, write_temp_file_with_siv};
 use cursive::view::Resizable;
 use cursive::views::{Dialog, TextView};
 use std::path::Path;
 
 use super::InitData;
 
-pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
-    let data = match read_temp_file_with_siv::<InitData>(siv, &temp_file_id) {
-        Ok(data) => data,
-        Err(err) => {
-            siv.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
-            return;
-        }
-    };
+pub fn run(siv: &mut cursive::Cursive, data: InitData) {
     let default = Path::new(&data.path).file_name().unwrap().to_str().unwrap();
 
     siv.add_layer(
@@ -22,50 +14,12 @@ pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
             cursive::views::EditView::new()
                 .content(default.to_string())
                 .on_submit({
-                    let temp_file_id = temp_file_id.clone();
+                    let data = data.clone();
+
                     move |s: &mut cursive::Cursive, id: &str| {
                         let id = id.to_string();
-                        let temp_file_id = temp_file_id.clone();
                         s.pop_layer();
-                        let mut data = match read_temp_file_with_siv::<InitData>(s, &temp_file_id) {
-                            Ok(data) => data,
-                            Err(err) => {
-                                s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
-                                return;
-                            }
-                        };
-
-                        fn save(
-                            s: &mut cursive::Cursive,
-                            temp_file_id: String,
-                            id: &str,
-                            overwrite_id_in_config: bool,
-                        ) {
-                            let mut data =
-                                match read_temp_file_with_siv::<InitData>(s, &temp_file_id) {
-                                    Ok(data) => data,
-                                    Err(err) => {
-                                        s.add_layer(Dialog::info(format!(
-                                            "Something went wrong: {}",
-                                            err
-                                        )));
-                                        return;
-                                    }
-                                };
-
-                            data.overwrite_id_in_config = overwrite_id_in_config;
-                            data.deck.id = id.to_string();
-
-                            match write_temp_file_with_siv(s, id, &data) {
-                                Ok(_) => select_description::run(s, id.to_string()),
-                                Err(err) => {
-                                    s.add_layer(Dialog::info(format!(
-                                        "Something went wrong: {}",
-                                        err
-                                    )));
-                                }
-                            }
-                        }
+                        let mut data = data.clone();
 
                         data.deck.id = id.to_string();
 
@@ -84,17 +38,20 @@ pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
                                     ))
                                     .title("Warning!")
                                     .button("Change id", {
-                                        let temp_file_id = temp_file_id.clone();
+                                        let data = data.clone();
                                         move |s| {
                                             s.pop_layer();
-                                            run(s, temp_file_id.clone());
+                                            run(s, data.clone());
                                         }
                                     })
                                     .button("Overwrite", {
-                                        let temp_file_id = temp_file_id.clone();
+                                        let  data = data.clone();
                                         move |s| {
                                             s.pop_layer();
-                                            save(s, temp_file_id.clone(), id.as_str(), true);
+
+                                            let mut data = data.clone();
+                                            data.overwrite_id_in_config = true;
+                                            select_description::run(s, data.clone());
                                         }
                                     }),
                                 );
@@ -102,7 +59,8 @@ pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
                             }
                         }
 
-                        save(s, temp_file_id, id.as_str(), false);
+                        data.overwrite_id_in_config = false;
+                        select_description::run(s, data.clone());
                     }
                 })
                 .fixed_width(50),

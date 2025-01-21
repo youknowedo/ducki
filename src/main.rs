@@ -8,7 +8,6 @@ mod commands;
 use commands::*;
 
 mod tui;
-mod util;
 
 fn main() {
     let args = commands::Args::parse();

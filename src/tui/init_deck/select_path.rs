@@ -7,12 +7,10 @@ use cursive::{
     view::Resizable,
     views::{Dialog, TextView},
 };
-use uuid::Uuid;
 
 use crate::{
     deck::Deck,
     tui::init_deck::{select_id, InitData},
-    util::write_temp_file_with_siv,
 };
 
 pub fn run(siv: &mut cursive::Cursive, id: Option<String>) {
@@ -88,11 +86,5 @@ fn save(
         deck: Deck::default(),
     };
 
-    let temp_file_id = Uuid::new_v4().to_string();
-    match write_temp_file_with_siv(s, &temp_file_id, &data) {
-        Ok(_) => select_id::run(s, temp_file_id.clone()),
-        Err(err) => {
-            s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
-        }
-    }
+    select_id::run(s, data);
 }

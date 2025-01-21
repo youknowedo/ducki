@@ -7,7 +7,7 @@ mod select_description;
 mod select_id;
 mod select_path;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct InitData {
     path: String,
     overwrite_file: bool,

@@ -1,31 +1,19 @@
 use super::save_deck;
 use super::InitData;
-use crate::util::{read_temp_file_with_siv, write_temp_file_with_siv};
 use cursive::view::Resizable;
 use cursive::views::{Dialog, EditView};
 
-pub fn run(siv: &mut cursive::Cursive, temp_file_id: String) {
+pub fn run(siv: &mut cursive::Cursive, data: InitData) {
     siv.add_layer(
         Dialog::around(
             EditView::new()
                 .on_submit(move |s, description| {
                     s.pop_layer();
-                    let mut data = match read_temp_file_with_siv::<InitData>(s, &temp_file_id) {
-                        Ok(data) => data,
-                        Err(err) => {
-                            s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
-                            return;
-                        }
-                    };
+                    let mut data = data.clone();
 
                     data.deck.description = description.to_string();
-
-                    match write_temp_file_with_siv(s, &temp_file_id, &data) {
-                        Ok(_) => save_deck::run(s, temp_file_id.clone()),
-                        Err(err) => {
-                            s.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
-                        }
-                    }
+                    
+                    save_deck::run(s, data);
                 })
                 .fixed_width(50),
         )

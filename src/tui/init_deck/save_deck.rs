@@ -1,20 +1,11 @@
 use super::InitData;
 use crate::config::{Config, DeckEntry};
 use crate::tui::deck_select;
-use crate::util::read_temp_file_with_siv;
 use cursive::views::Dialog;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn run(siv: &mut cursive::Cursive, temp_data_path: String) {
-    let data = match read_temp_file_with_siv::<InitData>(siv, &temp_data_path) {
-        Ok(data) => data,
-        Err(err) => {
-            siv.add_layer(Dialog::info(format!("Something went wrong: {}", err)));
-            return;
-        }
-    };
-
+pub fn run(siv: &mut cursive::Cursive, data: InitData) {
     let path = PathBuf::from(data.path.clone());
 
     if let Err(err) = fs::create_dir_all(&path) {
