@@ -1,10 +1,10 @@
 use cursive::{
     align::HAlign,
-    view::{Resizable, Scrollable},
-    views::{Dialog, SelectView},
+    view::{Nameable, Resizable, Scrollable},
+    views::{Button, Dialog, DummyView, LinearLayout, SelectView},
 };
 
-use crate::tui;
+use crate::{config::save_config_with_siv, tui};
 
 use super::study;
 
@@ -14,13 +14,25 @@ pub fn run(siv: &mut cursive::Cursive) {
         Err(err) => panic!("Could not get config: {}", err),
     };
 
-    let mut select = SelectView::new().h_align(HAlign::Center).autojump();
+    let mut select = SelectView::new()
+        .h_align(HAlign::Center)
+        .autojump()
+        .with_name("select");
 
-    select.add_all_str(config.decks.iter().map(|deck| deck.id.clone()));
-    select.add_item("< Add new deck >", String::from(":add"));
-    select.set_on_submit(select_deck);
+    let mut select_mut = select.get_mut();
+    select_mut.add_all_str(config.decks.iter().map(|deck| deck.id.clone()));
+    select_mut.add_item("< Add new deck >", String::from(":add"));
+    select_mut.set_on_submit(select_deck);
 
-    siv.add_layer(Dialog::around(select.scrollable().fixed_size((20, 10))).title("Select a deck"));
+    siv.add_layer(
+        Dialog::around(
+            LinearLayout::horizontal()
+                .child(select.scrollable().fixed_size((20, 10)))
+                .child(DummyView)
+                .child(LinearLayout::vertical().child(Button::new("Delete", delete_deck))),
+        )
+        .title("Select a deck"),
+    );
 }
 
 fn select_deck(siv: &mut cursive::Cursive, id: &str) {
@@ -33,4 +45,31 @@ fn select_deck(siv: &mut cursive::Cursive, id: &str) {
 
         study::run(siv, id.to_string());
     }
+}
+
+fn delete_deck(siv: &mut cursive::Cursive) {
+    let mut config = match crate::config::get_config() {
+        Ok(config) => config,
+        Err(err) => panic!("Could not get config: {}", err),
+    };
+
+    let id = match siv
+        .call_on_name("select", |view: &mut SelectView| view.selection())
+        .unwrap()
+    {
+        Some(id) => id,
+        None => {
+            siv.add_layer(Dialog::info("No deck selected"));
+            return;
+        }
+    }
+    .to_string();
+
+    siv.pop_layer();
+
+    config.decks.retain(|deck| deck.id != id);
+
+    save_config_with_siv(siv, config);
+
+    run(siv);
 }
