@@ -5,6 +5,7 @@ use cursive::views::*;
 
 pub mod deck_select;
 pub mod init_deck;
+pub mod edit_deck;
 pub mod study;
 
 use super::run_command;

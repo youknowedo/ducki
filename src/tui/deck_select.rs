@@ -6,7 +6,7 @@ use cursive::{
 
 use crate::{config::save_config_with_siv, tui};
 
-use super::study;
+use super::{edit_deck, study};
 
 pub fn run(siv: &mut cursive::Cursive) {
     let config = match crate::config::get_config() {
@@ -29,7 +29,11 @@ pub fn run(siv: &mut cursive::Cursive) {
             LinearLayout::horizontal()
                 .child(select.scrollable().fixed_size((20, 10)))
                 .child(DummyView)
-                .child(LinearLayout::vertical().child(Button::new("Delete", delete_deck))),
+                .child(
+                    LinearLayout::vertical()
+                        .child(Button::new("Edit", edit))
+                        .child(Button::new("Delete", delete_deck)),
+                ),
         )
         .title("Select a deck"),
     );
@@ -47,6 +51,23 @@ fn select_deck(siv: &mut cursive::Cursive, id: &str) {
     }
 }
 
+fn edit(siv: &mut cursive::Cursive) {
+    let id = match siv
+        .call_on_name("select", |view: &mut SelectView| view.selection())
+        .unwrap()
+    {
+        Some(id) => id,
+        None => {
+            siv.add_layer(Dialog::info("No deck selected"));
+            return;
+        }
+    }.to_string();
+
+    siv.pop_layer();
+
+    edit_deck::run(siv, id);
+}
+
 fn delete_deck(siv: &mut cursive::Cursive) {
     let mut config = match crate::config::get_config() {
         Ok(config) => config,
@@ -62,8 +83,7 @@ fn delete_deck(siv: &mut cursive::Cursive) {
             siv.add_layer(Dialog::info("No deck selected"));
             return;
         }
-    }
-    .to_string();
+    }.to_string();
 
     siv.pop_layer();
 
