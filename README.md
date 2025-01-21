@@ -37,16 +37,6 @@ cargo install cross --git https://github.com/cross-rs/cross
 ./build.sh
 ```
 
-## TODOS:
-
-- [x] ~~Migrate from Deno to Rust (90MB for a SFE???) [#1](https://github.com/youknowedo/ducki/issues/1)~~
-- [x] ~~Better command structure
-      (`ducki <deckSlug> add [id] -f [front] -b [back]`) [#2](https://github.com/youknowedo/ducki/issues/2)~~
-- [x] ~~Logging & Undo [#3](https://github.com/youknowedo/ducki/issues/3)~~
-- [ ] Import cards to deck (CSV, JSON, etc.) [#4](https://github.com/youknowedo/ducki/issues/4)
-- [ ] VIM-like navigation [#5](https://github.com/youknowedo/ducki/issues/5)
-- [ ] Full-screen interface (get rid of `npm:prompts`) [#6](https://github.com/youknowedo/ducki/issues/6)
-
 ## License
 
 Copyright &copy; 2024 Sigfredo. Licensed under the [MIT License](./LICENSE)
