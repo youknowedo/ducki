@@ -3,7 +3,10 @@ use std::{fs, path::Path};
 use cursive::views::Dialog;
 use inquire::Select;
 
-use crate::{config::Config, deck::Log, progress::Progress};
+use crate::{
+    config::Config,
+    deck::{progress::Progress, Log},
+};
 
 pub fn run(_deck_id: Option<String>, siv: &mut Option<&mut cursive::Cursive>) {
     match siv {

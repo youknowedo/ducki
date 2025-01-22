@@ -6,8 +6,10 @@ use inquire::{Select, Text};
 use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating, FSRS};
 
 use crate::config::Config;
-use crate::deck::{Deck, Log};
-use crate::progress::{Progress, ProgressCard, Rating};
+use crate::deck::{
+    progress::{Progress, ProgressCard, Rating},
+    Deck, Log,
+};
 use rand::seq::SliceRandom;
 
 use crate::tui::study::run as tui;

@@ -1,12 +1,12 @@
 use std::{fs, path::PathBuf};
 
+use progress::{Progress, ProgressCard};
 use rs_fsrs::ReviewLog;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    config::Config,
-    progress::{Progress, ProgressCard},
-};
+use crate::config::Config;
+
+pub mod progress;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Deck {

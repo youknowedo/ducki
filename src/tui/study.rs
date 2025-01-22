@@ -1,6 +1,6 @@
-use crate::{
-    deck::{Card, Deck, Log},
+use crate::deck::{
     progress::{Progress, ProgressCard, Rating},
+    Card, Deck, Log,
 };
 use chrono::Utc;
 use cursive::{
