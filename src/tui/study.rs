@@ -1,6 +1,7 @@
 use crate::deck::{
+    log::LogEntry,
     progress::{Progress, ProgressCard, Rating},
-    Card, Deck, Log,
+    Card, Deck,
 };
 use chrono::Utc;
 use cursive::{
@@ -190,7 +191,14 @@ fn update_progress(
     let progress_json = serde_json::to_string_pretty(&progress).unwrap();
     fs::write(progress_path, progress_json).unwrap();
 
-    deck.add_log(Log {
+    let mut log = match deck.log() {
+        Ok(log) => log,
+        Err(err) => {
+            return siv.add_layer(Dialog::info(format!("Could not get log: {}", err)));
+        }
+    };
+
+    log.entries.push(LogEntry {
         last_card: progress_card.clone(),
         log: new_schedule.review_log,
     });

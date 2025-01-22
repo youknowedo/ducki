@@ -6,9 +6,10 @@ use inquire::{Select, Text};
 use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating, FSRS};
 
 use crate::config::Config;
+use crate::deck::log::LogEntry;
 use crate::deck::{
     progress::{Progress, ProgressCard, Rating},
-    Deck, Log,
+    Deck,
 };
 use rand::seq::SliceRandom;
 
@@ -183,9 +184,20 @@ fn terminal(args: StudyArgs) {
 
         progress.save();
 
-        deck.add_log(Log {
-            last_card: card.clone(),
-            log: new_schedule.review_log,
-        });
+        let mut log = match deck.log() {
+            Ok(log) => log,
+            Err(err) => {
+                panic!("Could not get log: {}", err);
+            }
+        };
+
+        log.entries.push(
+            LogEntry {
+                last_card: card.clone(),
+                log: new_schedule.review_log,
+            }
+        );
+
+        log.save();
     }
 }

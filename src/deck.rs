@@ -1,11 +1,12 @@
 use std::{fs, path::PathBuf};
 
-use progress::{Progress, ProgressCard};
-use rs_fsrs::ReviewLog;
+use log::Log;
+use progress::Progress;
 use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
 
+pub mod log;
 pub mod progress;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -125,59 +126,11 @@ impl Deck {
         }
     }
 
-    pub fn get_logs(&mut self) -> Vec<Log> {
-        let deck_path = match self.path() {
-            Ok(path) => path,
-            Err(err) => {
-                panic!("Could not get deck path: {}", err);
-            }
-        };
-
-        let logs_path = deck_path.join(".logs.json");
-
-        match fs::read_to_string(logs_path) {
-            Ok(contents) => match serde_json::from_str(&contents) {
-                Ok(config) => config,
-                Err(err) => {
-                    panic!("Could not parse config file: {}", err);
-                }
-            },
-            Err(err) => {
-                if err.kind() == std::io::ErrorKind::NotFound {
-                    Vec::new()
-                } else {
-                    panic!("Could not read config file: {}", err);
-                }
-            }
-        }
-    }
-
-    pub fn save_logs(&mut self, new_logs: Vec<Log>) {
-        let deck_path = match self.path() {
-            Ok(path) => path,
-            Err(err) => {
-                panic!("Could not get deck path: {}", err);
-            }
-        };
-
-        let logs_path = deck_path.join(".logs.json");
-
-        match fs::write(logs_path, serde_json::to_string(&new_logs).unwrap()) {
-            Ok(_) => {}
-            Err(err) => {
-                panic!("Could not write config file: {}", err);
-            }
-        }
-    }
-
-    pub fn add_log(&mut self, log: Log) {
-        let mut logs = self.get_logs();
-        logs.push(log);
-        self.save_logs(logs);
-    }
-
     pub fn progress(&mut self) -> Result<Progress, String> {
         Progress::get(self.id.clone())
+    }
+    pub fn log(&mut self) -> Result<Log, String> {
+        Log::get(self.id.clone())
     }
 }
 
@@ -191,12 +144,6 @@ impl Default for Deck {
             cards: Vec::new(),
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Log {
-    pub last_card: ProgressCard,
-    pub log: ReviewLog,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
