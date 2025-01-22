@@ -1,5 +1,6 @@
 use crate::{
-    config::Config, deck::{Card, Deck, Log}, progress::{Progress, ProgressCard, Rating}
+    deck::{Card, Deck, Log},
+    progress::{Progress, ProgressCard, Rating},
 };
 use chrono::Utc;
 use cursive::{
@@ -8,7 +9,7 @@ use cursive::{
 };
 use rand::seq::SliceRandom;
 use rs_fsrs::{Card as FSRSCard, Rating as FSRSRating, SchedulingInfo, FSRS};
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::HashMap, fs};
 
 use super::deck_select;
 
@@ -20,8 +21,6 @@ struct Error {
 enum ErrorKind {
     NotFound,
     Io,
-    Parse,
-    Redirect,
 }
 
 #[derive(Clone)]
@@ -32,20 +31,15 @@ struct StudyData {
 }
 
 pub fn run(siv: &mut Cursive, id: String) {
-    let (deck, deck_path) = match setup_deck(id) {
+    let mut deck = match setup_deck(id) {
         Ok(val) => val,
-        Err(err) => match err.kind {
-            ErrorKind::Redirect => {
-                return;
-            }
-            _ => {
-                siv.add_layer(Dialog::info(err.message));
-                return;
-            }
-        },
+        Err(err) => {
+            siv.add_layer(Dialog::info(err.message));
+            return;
+        }
     };
 
-    let mut progress_cards = match setup_cards(&deck, deck_path.clone()) {
+    let mut progress_cards = match setup_cards(&mut deck) {
         Ok(val) => val,
         Err(err) => match err.kind {
             ErrorKind::NotFound => {
@@ -148,7 +142,7 @@ fn update_progress(
     schedules: &HashMap<rs_fsrs::Rating, SchedulingInfo>,
     rating: Rating,
 ) {
-    let (deck, deck_path) = match setup_deck(study_data.deck_id.clone()) {
+    let mut deck = match setup_deck(study_data.deck_id.clone()) {
         Ok(val) => val,
         Err(err) => {
             siv.add_layer(Dialog::info(err.message));
@@ -156,7 +150,15 @@ fn update_progress(
         }
     };
 
-    let progress_path = Path::new(&deck_path).join(".progress.json");
+    let deck_path = match deck.path() {
+        Ok(path) => path,
+        Err(err) => {
+            siv.add_layer(Dialog::info(format!("Could not get deck path: {}", err)));
+            return;
+        }
+    };
+    let progress_path = deck_path.join(".progress.json");
+
     let new_schedule = schedules[&FSRSRating::from(rating)].clone();
 
     // Get progress
@@ -188,40 +190,15 @@ fn update_progress(
     let progress_json = serde_json::to_string_pretty(&progress).unwrap();
     fs::write(progress_path, progress_json).unwrap();
 
-    deck.add_log(
-        deck.id.clone(),
-        Log {
-            last_card: progress_card.clone(),
-            log: new_schedule.review_log,
-        },
-    );
+    deck.add_log(Log {
+        last_card: progress_card.clone(),
+        log: new_schedule.review_log,
+    });
 
     study(siv, study_data.clone());
 }
 
-fn setup_deck<'a>(id: String) -> Result<(Deck, String), Error> {
-    let config = match Config::get() {
-        Ok(config) => config,
-        Err(err) => {
-            return Err(Error {
-                kind: ErrorKind::Io,
-                message: format!("Could not get config: {}", err),
-            });
-        }
-    };
-
-    let deck_entry = match config.decks.iter().find(|deck| deck.id == id) {
-        Some(deck) => deck.clone(),
-        None => {
-            return Err(Error {
-                kind: ErrorKind::NotFound,
-                message: "Deck not found in config.".to_string(),
-            });
-        }
-    };
-
-    let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
+fn setup_deck<'a>(id: String) -> Result<Deck, Error> {
     let deck = match Deck::get(id) {
         Ok(deck) => deck,
         Err(err) => {
@@ -232,35 +209,37 @@ fn setup_deck<'a>(id: String) -> Result<(Deck, String), Error> {
         }
     };
 
-    Ok((deck, deck_path.to_str().unwrap().to_string()))
+    Ok(deck)
 }
 
-fn setup_cards(deck: &Deck, deck_path: String) -> Result<Vec<ProgressCard>, Error> {
+fn setup_cards(deck: &mut Deck) -> Result<Vec<ProgressCard>, Error> {
     let now = Utc::now();
 
-    let progress_path = Path::new(&deck_path).join(".progress.json");
-
-    let mut progress: Progress = match fs::read_to_string(&progress_path) {
-        Ok(contents) => match serde_json::from_str(&contents) {
-            Ok(progress) => progress,
-            Err(err) => {
-                return Err(Error {
-                    kind: ErrorKind::Parse,
-                    message: format!("Could not parse progress file: {}", err),
-                });
-            }
-        },
+    let deck_path = match deck.path() {
+        Ok(path) => path,
         Err(err) => {
-            if err.kind() == std::io::ErrorKind::NotFound {
-                Progress { cards: Vec::new() }
-            } else {
-                return Err(Error {
-                    kind: ErrorKind::Io,
-                    message: format!("Could not read progress file: {}", err),
-                });
-            }
+            return Err(Error {
+                kind: ErrorKind::Io,
+                message: format!("Could not get deck path: {}", err),
+            });
         }
     };
+    let progress_path = deck_path.join(".progress.json");
+
+    let mut progress = match deck.progress() {
+        Ok(progress) => progress,
+        Err(err) => {
+            return Err(Error {
+                kind: ErrorKind::Io,
+                message: format!("Could not get progress: {}", err),
+            });
+        }
+    };
+
+    // If the progress file does not exist, create a new one
+    if !progress_path.exists() {
+        progress = Progress::new(deck.id.clone());
+    }
 
     // Remove any cards that have been removed from the deck by checking ids
     progress.cards.retain(|progress_card| {

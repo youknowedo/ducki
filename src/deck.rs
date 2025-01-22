@@ -1,17 +1,19 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use rs_fsrs::ReviewLog;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::Config, progress::ProgressCard};
+use crate::{
+    config::Config,
+    progress::{Progress, ProgressCard},
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Deck {
     #[serde(skip_serializing, skip_deserializing)]
-    pub config: Option<Config>,
+    _config: Option<Config>,
+    #[serde(skip_serializing, skip_deserializing)]
+    _path: Option<PathBuf>,
 
     pub id: String,
     pub description: String,
@@ -19,20 +21,28 @@ pub struct Deck {
 }
 
 impl Deck {
-    pub fn get(id: String) -> Result<Deck, String> {
-        let config = match Config::get() {
-            Ok(config) => config,
-            Err(err) => return Err(format!("Could not get config: {}", err)),
+    pub fn new(id: String, description: String) -> Self {
+        Deck {
+            _config: None,
+            _path: None,
+            id,
+            description,
+            cards: Vec::new(),
+        }
+    }
+
+    pub fn get(id: String) -> Result<Self, String> {
+        let mut deck = Deck::default();
+        deck.id = id;
+
+        let deck_path = match deck.path() {
+            Ok(path) => path,
+            Err(err) => {
+                return Err(format!("Could not get deck path: {}", err));
+            }
         };
 
-        let deck_entry = match config.decks.iter().find(|deck| deck.id == id) {
-            Some(deck) => deck.clone(),
-            None => return Err("Deck not found in config.".to_string()),
-        };
-
-        let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-        let deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
+        deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
             Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
                 Ok(deck) => deck,
                 Err(err) => {
@@ -51,8 +61,15 @@ impl Deck {
         Ok(deck)
     }
 
-    pub fn save(&self) -> Result<(), String> {
-        let deck_path = std::path::Path::new(self.config.as_ref().unwrap().decks[0].path.as_str());
+    pub fn save(&mut self) -> Result<(), String> {
+        let config = match self.config() {
+            Ok(config) => config,
+            Err(err) => {
+                return Err(err);
+            }
+        };
+
+        let deck_path = std::path::Path::new(config.decks[0].path.as_str());
 
         let deck_as_string = match serde_json::to_string(&self) {
             Ok(json) => json,
@@ -71,20 +88,52 @@ impl Deck {
         Ok(())
     }
 
-    fn logs_path(&self, deck_id: String) -> PathBuf {
-        match &self.config {
-            None => panic!("Deck config not set."),
-            Some(config) => match config.decks.iter().find(|deck| deck.id == deck_id) {
-                Some(deck) => Path::new(deck.path.as_str()).join(".logs.json"),
-                None => {
-                    panic!("Deck not found in config.");
-                }
-            },
+    fn config(&mut self) -> Result<Config, String> {
+        match self._config {
+            Some(ref config) => Ok(config.clone()),
+            None => {
+                let config = match Config::get() {
+                    Ok(config) => config,
+                    Err(err) => return Err(format!("Could not get config: {}", err)),
+                };
+
+                self._config = Some(config.clone());
+                return Ok(self._config.clone().unwrap());
+            }
         }
     }
 
-    pub fn get_logs(&self, deck_id: String) -> Vec<Log> {
-        let logs_path = self.logs_path(deck_id);
+    pub fn path(&mut self) -> Result<PathBuf, String> {
+        match self._path {
+            Some(ref path) => Ok(path.clone()),
+            None => {
+                let config = match self.config() {
+                    Ok(config) => config,
+                    Err(err) => return Err(err),
+                };
+
+                let deck_entry = match config.decks.iter().find(|deck| deck.id == self.id) {
+                    Some(deck) => deck.clone(),
+                    None => return Err("Deck not found in config.".to_string()),
+                };
+
+                let deck_path = std::path::Path::new(deck_entry.path.as_str());
+
+                self._path = Some(deck_path.to_path_buf());
+                return Ok(self._path.clone().unwrap());
+            }
+        }
+    }
+
+    pub fn get_logs(&mut self) -> Vec<Log> {
+        let deck_path = match self.path() {
+            Ok(path) => path,
+            Err(err) => {
+                panic!("Could not get deck path: {}", err);
+            }
+        };
+
+        let logs_path = deck_path.join(".logs.json");
 
         match fs::read_to_string(logs_path) {
             Ok(contents) => match serde_json::from_str(&contents) {
@@ -103,8 +152,15 @@ impl Deck {
         }
     }
 
-    pub fn save_logs(&self, deck_id: String, new_logs: Vec<Log>) {
-        let logs_path = self.logs_path(deck_id);
+    pub fn save_logs(&mut self, new_logs: Vec<Log>) {
+        let deck_path = match self.path() {
+            Ok(path) => path,
+            Err(err) => {
+                panic!("Could not get deck path: {}", err);
+            }
+        };
+
+        let logs_path = deck_path.join(".logs.json");
 
         match fs::write(logs_path, serde_json::to_string(&new_logs).unwrap()) {
             Ok(_) => {}
@@ -114,17 +170,22 @@ impl Deck {
         }
     }
 
-    pub fn add_log(&self, deck_id: String, log: Log) {
-        let mut logs = self.get_logs(deck_id.clone());
+    pub fn add_log(&mut self, log: Log) {
+        let mut logs = self.get_logs();
         logs.push(log);
-        self.save_logs(deck_id.clone(), logs);
+        self.save_logs(logs);
+    }
+
+    pub fn progress(&mut self) -> Result<Progress, String> {
+        Progress::get(self.id.clone())
     }
 }
 
 impl Default for Deck {
     fn default() -> Self {
         Deck {
-            config: None,
+            _config: None,
+            _path: None,
             id: String::new(),
             description: String::new(),
             cards: Vec::new(),
