@@ -8,29 +8,24 @@ use crate::deck::Deck;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Progress {
     #[serde(skip_serializing, skip_deserializing)]
-    _path: Option<PathBuf>,
+    pub path: PathBuf,
 
     pub deck_id: String,
     pub cards: Vec<ProgressCard>,
 }
 impl Progress {
-    pub fn new(deck_id: String) -> Self {
+    pub fn new(deck_id: String, deck_path: PathBuf) -> Self {
         Progress {
-            _path: None,
+            path: deck_path.join(".progress.json"),
             deck_id,
             cards: Vec::new(),
         }
     }
 
-    pub fn get(deck_id: String) -> Result<Self, String> {
-        let mut progress = Progress::new(deck_id);
+    pub fn get(deck: &Deck) -> Result<Self, String> {
+        let progress_path = deck.path.join(".progress.json");
 
-        let progress_path = match progress.path() {
-            Ok(path) => path,
-            Err(err) => {
-                return Err(format!("Could not get progress path: {}", err));
-            }
-        };
+        let mut progress = Progress::new(deck.id.clone(), progress_path.clone());
 
         progress = match fs::read_to_string(progress_path) {
             Ok(contents) => match serde_json::from_str::<Progress>(&contents) {
@@ -41,7 +36,7 @@ impl Progress {
             },
             Err(err) => {
                 if err.kind() == std::io::ErrorKind::NotFound {
-                    return Err("Progress file not found.".to_string());
+                    return Ok(progress);
                 } else {
                     return Err(format!("Could not read progress file: {}", err));
                 }
@@ -52,38 +47,21 @@ impl Progress {
     }
 
     pub fn save(&mut self) {
-        let deck_path = match self.path() {
-            Ok(path) => path,
-            Err(err) => {
-                panic!("Could not get deck path: {}", err);
-            }
-        };
-
-        let progress_path = deck_path.join(".progress.json");
-
-        match fs::write(progress_path, serde_json::to_string(&self).unwrap()) {
+        match fs::write(self.path.clone(), serde_json::to_string(&self).unwrap()) {
             Ok(_) => {}
             Err(err) => {
                 panic!("Could not write progress file: {}", err);
             }
         }
     }
-
-    fn path(&self) -> Result<PathBuf, String> {
-        let mut deck = match Deck::get(self.deck_id.clone()) {
-            Ok(deck) => deck,
-            Err(err) => {
-                return Err(format!("Could not get deck: {}", err));
-            }
-        };
-        let deck_path = match deck.path() {
-            Ok(path) => path,
-            Err(err) => {
-                return Err(format!("Could not get deck path: {}", err));
-            }
-        };
-
-        Ok(deck_path.join(".progress.json"))
+}
+impl Default for Progress {
+    fn default() -> Self {
+        Progress {
+            path: PathBuf::new(),
+            deck_id: String::new(),
+            cards: Vec::new(),
+        }
     }
 }
 

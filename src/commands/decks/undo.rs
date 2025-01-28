@@ -26,7 +26,7 @@ fn terminal(_deck_id: Option<String>) {
         },
     };
 
-    let mut deck = match Deck::get(deck_id.clone()) {
+    let  deck = match Deck::get(deck_id.clone()) {
         Ok(deck) => deck,
         Err(err) => {
             panic!("Could not get deck: {}", err);

@@ -93,8 +93,9 @@ fn terminal(args: InitArgs) {
         }
     }
 
-    let mut deck = Deck::new(
+    let deck = Deck::new(
         id.clone(),
+        path.clone(),
         match Text::new("What description should the new deck have?").prompt() {
             Ok(description) => description,
             Err(err) => panic!("Could not read description: {}", err),
@@ -106,12 +107,7 @@ fn terminal(args: InitArgs) {
         Err(err) => panic!("Could not save deck: {}", err),
     };
 
-    let deck_entry = crate::config::DeckEntry {
-        id,
-        path: path.to_str().unwrap().to_string(),
-    };
-
-    config.decks.push(deck_entry);
+    config.decks.push(deck.to_entry());
 
     match config.save() {
         Ok(_) => {}

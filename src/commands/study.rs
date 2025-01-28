@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::fs;
 
 use chrono::Utc;
 use clap::Parser;
@@ -61,9 +61,9 @@ fn terminal(args: StudyArgs) {
             }
         },
     };
-    let deck_path = Path::new(deck_entry.path.as_str());
+    let deck_path = deck_entry.path;
 
-    let mut deck: Deck = match fs::read_to_string(deck_path.join("deck.json")) {
+    let deck: Deck = match fs::read_to_string(deck_path.join("deck.json")) {
         Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
             Ok(deck) => deck,
             Err(err) => {
@@ -90,7 +90,12 @@ fn terminal(args: StudyArgs) {
         },
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
-                Progress::new(deck.id.clone())
+                match Progress::get(&deck) {
+                    Ok(progress) => progress,
+                    Err(err) => {
+                        panic!("Could not get progress: {}", err);
+                    }
+                }
             } else {
                 panic!("Could not read progress file: {}", err);
             }
@@ -191,12 +196,10 @@ fn terminal(args: StudyArgs) {
             }
         };
 
-        log.entries.push(
-            LogEntry {
-                last_card: card.clone(),
-                log: new_schedule.review_log,
-            }
-        );
+        log.entries.push(LogEntry {
+            last_card: card.clone(),
+            log: new_schedule.review_log,
+        });
 
         log.save();
     }

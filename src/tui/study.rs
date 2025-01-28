@@ -88,14 +88,24 @@ fn study(siv: &mut Cursive, mut study_data: StudyData) {
     let progress_card = match study_data.progress_cards.pop() {
         Some(progress_card) => progress_card,
         None => {
-            siv.add_layer(Dialog::info("No more cards to study."));
+            siv.add_layer(
+                Dialog::around(TextView::new("No more cards to study.")).button("Ok", |s| {
+                    s.pop_layer();
+                    deck_select::run(s);
+                }),
+            );
             return;
         }
     };
     let deck_card = match study_data.deck_cards.pop() {
         Some(deck_card) => deck_card,
         None => {
-            siv.add_layer(Dialog::info("No more cards to study."));
+            siv.add_layer(
+                Dialog::around(TextView::new("No more cards to study.")).button("Ok", |s| {
+                    s.pop_layer();
+                    deck_select::run(s);
+                }),
+            );
             return;
         }
     };
@@ -118,6 +128,8 @@ fn study(siv: &mut Cursive, mut study_data: StudyData) {
                             .title("Study")
                             .button("Easy", {
                                 let study_data = study_data.clone();
+                                let progress_card = progress_card.clone();
+                                let schedules = schedules.clone();
                                 move |s| {
                                     s.pop_layer();
 
@@ -127,6 +139,54 @@ fn study(siv: &mut Cursive, mut study_data: StudyData) {
                                         &progress_card,
                                         &schedules,
                                         Rating::Easy,
+                                    );
+                                }
+                            })
+                            .button("Good", {
+                                let study_data = study_data.clone();
+                                let progress_card = progress_card.clone();
+                                let schedules = schedules.clone();
+                                move |s| {
+                                    s.pop_layer();
+
+                                    update_progress(
+                                        s,
+                                        study_data.clone(),
+                                        &progress_card,
+                                        &schedules,
+                                        Rating::Good,
+                                    );
+                                }
+                            })
+                            .button("Hard", {
+                                let study_data = study_data.clone();
+                                let progress_card = progress_card.clone();
+                                let schedules = schedules.clone();
+                                move |s| {
+                                    s.pop_layer();
+
+                                    update_progress(
+                                        s,
+                                        study_data.clone(),
+                                        &progress_card,
+                                        &schedules,
+                                        Rating::Hard,
+                                    );
+                                }
+                            })
+                            .button("Again", {
+                                let study_data = study_data.clone();
+                                let progress_card = progress_card.clone();
+                                let schedules = schedules.clone();
+                                move |s| {
+                                    s.pop_layer();
+
+                                    update_progress(
+                                        s,
+                                        study_data.clone(),
+                                        &progress_card,
+                                        &schedules,
+                                        Rating::Again,
                                     );
                                 }
                             }),
@@ -143,7 +203,7 @@ fn update_progress(
     schedules: &HashMap<rs_fsrs::Rating, SchedulingInfo>,
     rating: Rating,
 ) {
-    let mut deck = match setup_deck(study_data.deck_id.clone()) {
+    let deck = match setup_deck(study_data.deck_id.clone()) {
         Ok(val) => val,
         Err(err) => {
             siv.add_layer(Dialog::info(err.message));
@@ -151,14 +211,7 @@ fn update_progress(
         }
     };
 
-    let deck_path = match deck.path() {
-        Ok(path) => path,
-        Err(err) => {
-            siv.add_layer(Dialog::info(format!("Could not get deck path: {}", err)));
-            return;
-        }
-    };
-    let progress_path = deck_path.join(".progress.json");
+    let progress_path = deck.path.join(".progress.json");
 
     let new_schedule = schedules[&FSRSRating::from(rating)].clone();
 
@@ -223,16 +276,7 @@ fn setup_deck<'a>(id: String) -> Result<Deck, Error> {
 fn setup_cards(deck: &mut Deck) -> Result<Vec<ProgressCard>, Error> {
     let now = Utc::now();
 
-    let deck_path = match deck.path() {
-        Ok(path) => path,
-        Err(err) => {
-            return Err(Error {
-                kind: ErrorKind::Io,
-                message: format!("Could not get deck path: {}", err),
-            });
-        }
-    };
-    let progress_path = deck_path.join(".progress.json");
+    let progress_path = deck.path.join(".progress.json");
 
     let mut progress = match deck.progress() {
         Ok(progress) => progress,
@@ -246,7 +290,15 @@ fn setup_cards(deck: &mut Deck) -> Result<Vec<ProgressCard>, Error> {
 
     // If the progress file does not exist, create a new one
     if !progress_path.exists() {
-        progress = Progress::new(deck.id.clone());
+        progress = match Progress::get(&deck) {
+            Ok(progress) => progress,
+            Err(err) => {
+                return Err(Error {
+                    kind: ErrorKind::Io,
+                    message: format!("Could not get progress: {}", err),
+                });
+            }
+        };
     }
 
     // Remove any cards that have been removed from the deck by checking ids

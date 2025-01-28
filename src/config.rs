@@ -2,6 +2,7 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs;
+use std::path::PathBuf;
 use std::result::Result;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -96,7 +97,12 @@ impl Default for Config {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DeckEntry {
     pub id: String,
-    pub path: String,
+    pub path: PathBuf,
+}
+impl DeckEntry {
+    pub fn new(id: String, path: PathBuf) -> DeckEntry {
+        DeckEntry { id, path }
+    }
 }
 
 impl fmt::Display for DeckEntry {

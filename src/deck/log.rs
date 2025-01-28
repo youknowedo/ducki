@@ -8,31 +8,24 @@ use super::{progress::ProgressCard, Deck};
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Log {
     #[serde(skip_serializing, skip_deserializing)]
-    _path: Option<PathBuf>,
+    path: PathBuf,
 
     pub deck_id: String,
     pub entries: Vec<LogEntry>,
 }
 impl Log {
-    pub fn new(deck_id: String) -> Self {
+    pub fn new(deck_id: String, deck_path: PathBuf) -> Self {
         Log {
-            _path: None,
+            path: deck_path.join(".log.json"),
             deck_id,
             entries: Vec::new(),
         }
     }
 
-    pub fn get(deck_id: String) -> Result<Self, String> {
-        let mut log = Log::new(deck_id);
+    pub fn get(deck: &Deck) -> Result<Self, String> {
+        let log_path = deck.path.join(".log.json");
 
-        let deck_path = match log.path() {
-            Ok(path) => path,
-            Err(err) => {
-                return Err(format!("Could not get log path: {}", err));
-            }
-        };
-
-        let log_path = deck_path.join(".log.json");
+        let mut log = Log::new(deck.id.clone(), log_path.clone());
 
         log = match fs::read_to_string(log_path) {
             Ok(contents) => match serde_json::from_str::<Log>(&contents) {
@@ -43,7 +36,7 @@ impl Log {
             },
             Err(err) => {
                 if err.kind() == std::io::ErrorKind::NotFound {
-                    return Err("Log file not found.".to_string());
+                    return Ok(log);
                 } else {
                     return Err(format!("Could not read log file: {}", err));
                 }
@@ -54,38 +47,21 @@ impl Log {
     }
 
     pub fn save(&mut self) {
-        let deck_path = match self.path() {
-            Ok(path) => path,
-            Err(err) => {
-                panic!("Could not get deck path: {}", err);
-            }
-        };
-
-        let log_path = deck_path.join(".log.json");
-
-        match fs::write(log_path, serde_json::to_string(&self).unwrap()) {
+        match fs::write(self.path.clone(), serde_json::to_string(&self).unwrap()) {
             Ok(_) => {}
             Err(err) => {
                 panic!("Could not write config file: {}", err);
             }
         }
     }
-
-    fn path(&self) -> Result<PathBuf, String> {
-        let mut deck = match Deck::get(self.deck_id.clone()) {
-            Ok(deck) => deck,
-            Err(err) => {
-                return Err(format!("Could not get deck: {}", err));
-            }
-        };
-        let deck_path = match deck.path() {
-            Ok(path) => path,
-            Err(err) => {
-                return Err(format!("Could not get deck path: {}", err));
-            }
-        };
-
-        Ok(deck_path.join(".progress.json"))
+}
+impl Default for Log {
+    fn default() -> Self {
+        Log {
+            path: PathBuf::new(),
+            deck_id: String::new(),
+            entries: Vec::new(),
+        }
     }
 }
 
