@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::fs;
 
 use clap::Parser;
 use cursive::views::Dialog;
@@ -43,7 +43,7 @@ fn terminal(_deck_id: Option<String>, args: RemoveArgs) {
     let deck_entry = config.decks.iter().find(|deck| deck.id == deck_id).unwrap();
 
     // Check if the deck is in path
-    let deck_path = Path::new(deck_entry.path.as_str()).join("deck.json");
+    let deck_path = deck_entry.path.join("deck.json");
     if !deck_path.exists() {
         panic!("Deck not found in path: {}", deck_path.display());
     }

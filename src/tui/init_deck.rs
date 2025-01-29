@@ -1,4 +1,8 @@
-use std::{ffi::OsStr, path::Path};
+use std::{
+    ffi::OsStr,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use cursive::{
     view::{Nameable, Resizable},
@@ -6,7 +10,9 @@ use cursive::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::deck::Deck;
+use crate::{config::Config, deck::Deck};
+
+use super::deck_select;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct InitData {
@@ -66,17 +72,29 @@ pub fn run(siv: &mut cursive::Cursive, id: Option<String>) {
         )
         .button("Save", {
             move |s| {
-                let mut deck = Deck::default();
-
                 let id = s
                     .call_on_name("id", |view: &mut EditView| view.get_content())
+                    .unwrap();
+                let path = s
+                    .call_on_name("path", |view: &mut EditView| view.get_content())
                     .unwrap();
                 let description = s
                     .call_on_name("description", |view: &mut EditView| view.get_content())
                     .unwrap();
 
-                deck.id = id.to_string();
-                deck.description = description.to_string();
+                let deck_path = PathBuf::from(&path.to_string());
+
+                // Create directories if they do not exist
+                if let Err(err) = fs::create_dir_all(&deck_path) {
+                    s.add_layer(Dialog::info(format!("Could not create directory: {}", err)));
+                    return;
+                }
+
+                let deck = Deck::new(
+                    id.to_string(),
+                    deck_path.clone(),
+                    description.to_string(),
+                );
 
                 match deck.save() {
                     Ok(_) => {}
@@ -86,7 +104,27 @@ pub fn run(siv: &mut cursive::Cursive, id: Option<String>) {
                     }
                 }
 
+                let mut config = match Config::get() {
+                    Ok(config) => config,
+                    Err(err) => {
+                        s.add_layer(Dialog::info(format!("Could not get config: {}", err)));
+                        return;
+                    }
+                };
+
+                config.decks.push(deck.to_entry());
+
+                match config.save() {
+                    Ok(_) => {}
+                    Err(err) => {
+                        s.add_layer(Dialog::info(format!("Could not save config: {}", err)));
+                        return;
+                    }
+                }
+
                 s.pop_layer();
+
+                deck_select::run(s);
             }
         }),
     );

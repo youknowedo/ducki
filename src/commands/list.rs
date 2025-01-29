@@ -1,4 +1,4 @@
-use crate::{config::Config, tui::deck_select};
+use crate::{config::Config, deck::Deck, tui::deck_select};
 
 pub fn run(siv: &mut Option<&mut cursive::Cursive>) {
     let config = match Config::get() {
@@ -21,7 +21,10 @@ pub fn run(siv: &mut Option<&mut cursive::Cursive>) {
                 });
             }
             None => {
-                println!("{}", deck.id);
+                let deck = Deck::get(deck.id).unwrap();
+
+
+                println!("{}: {}", deck.id, deck.cards.len());
             }
         }
     }

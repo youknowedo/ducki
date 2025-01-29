@@ -3,7 +3,7 @@ use std::{env::current_dir, fs::create_dir_all};
 use clap::Parser;
 use inquire::{Confirm, Text};
 
-use crate::{config::Config, tui::init_deck::run as tui};
+use crate::{config::Config, deck::Deck, tui::init_deck::run as tui};
 
 #[derive(Parser, Debug, Clone)]
 pub struct InitArgs {
@@ -93,27 +93,21 @@ fn terminal(args: InitArgs) {
         }
     }
 
-    let deck = crate::deck::Deck {
-        config: Some(config.clone()),
-        id: id.clone(),
-        description: match Text::new("What description should the new deck have?").prompt() {
+    let deck = Deck::new(
+        id.clone(),
+        path.clone(),
+        match Text::new("What description should the new deck have?").prompt() {
             Ok(description) => description,
             Err(err) => panic!("Could not read description: {}", err),
         },
-        cards: Vec::new(),
-    };
+    );
 
-   match deck.save() {
+    match deck.save() {
         Ok(_) => {}
         Err(err) => panic!("Could not save deck: {}", err),
-   };
-
-    let deck_entry = crate::config::DeckEntry {
-        id,
-        path: path.to_str().unwrap().to_string(),
     };
 
-    config.decks.push(deck_entry);
+    config.decks.push(deck.to_entry());
 
     match config.save() {
         Ok(_) => {}

@@ -4,7 +4,7 @@ use clap::Parser;
 use cursive::views::Dialog;
 use inquire::Confirm;
 
-use crate::config::Config;
+use crate::config::{Config, DeckEntry};
 
 #[derive(Parser, Debug, Clone)]
 pub struct AddArgs {
@@ -66,10 +66,7 @@ fn terminal(args: AddArgs) {
         }
     }
 
-    config.decks.push(crate::config::DeckEntry {
-        id,
-        path: path.to_str().unwrap().to_string(),
-    });
+    config.decks.push(DeckEntry::new(id.clone(), path.clone()));
     match config.save() {
         Ok(_) => {}
         Err(err) => panic!("Could not save config: {}", err),

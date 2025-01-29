@@ -1,6 +1,6 @@
 # Deck files
 deck.json
-.logs.json
+.log.json
 .progress.json
 
 # Added by cargo

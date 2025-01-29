@@ -1,38 +1,57 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
-use rs_fsrs::ReviewLog;
+use log::Log;
+use progress::Progress;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::Config, progress::ProgressCard};
+use crate::config::{Config, DeckEntry};
+
+pub mod log;
+pub mod progress;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Deck {
-    #[serde(skip_serializing, skip_deserializing)]
-    pub config: Option<Config>,
-
     pub id: String,
     pub description: String,
     pub cards: Vec<Card>,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    pub path: PathBuf,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub progress: Progress,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub log: Log,
 }
 
 impl Deck {
-    pub fn get(id: String) -> Result<Deck, String> {
+    pub fn new(id: String, path: PathBuf, description: String) -> Self {
+        Deck {
+            path: path.clone(),
+            id: id.clone(),
+            description,
+            cards: Vec::new(),
+            progress: Progress::new(id.clone(), path.clone()),
+            log: Log::new(id.clone(), path.clone()),
+        }
+    }
+
+    pub fn get(id: String) -> Result<Self, String> {
         let config = match Config::get() {
             Ok(config) => config,
-            Err(err) => return Err(format!("Could not get config: {}", err)),
+            Err(err) => {
+                return Err(err);
+            }
         };
 
         let deck_entry = match config.decks.iter().find(|deck| deck.id == id) {
             Some(deck) => deck.clone(),
-            None => return Err("Deck not found in config.".to_string()),
+            None => {
+                return Err("Deck not found in config.".to_string());
+            }
         };
+        let deck_path = deck_entry.path;
 
-        let deck_path = std::path::Path::new(deck_entry.path.as_str());
-
-        let deck: Deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
+        let mut deck = match std::fs::read_to_string(deck_path.join("deck.json")) {
             Ok(contents) => match serde_json::from_str::<Deck>(&contents) {
                 Ok(deck) => deck,
                 Err(err) => {
@@ -47,13 +66,24 @@ impl Deck {
                 }
             }
         };
+        deck.path = deck_path;
+        deck.progress = match Progress::get(&deck) {
+            Ok(progress) => progress,
+            Err(err) => {
+                return Err(err);
+            }
+        };
+        deck.log = match Log::get(&deck) {
+            Ok(log) => log,
+            Err(err) => {
+                return Err(err);
+            }
+        };
 
         Ok(deck)
     }
 
     pub fn save(&self) -> Result<(), String> {
-        let deck_path = std::path::Path::new(self.config.as_ref().unwrap().decks[0].path.as_str());
-
         let deck_as_string = match serde_json::to_string(&self) {
             Ok(json) => json,
             Err(err) => {
@@ -61,81 +91,43 @@ impl Deck {
             }
         };
 
-        match fs::write(deck_path.join("deck.json"), deck_as_string) {
+        match fs::write(self.path.join("deck.json"), deck_as_string) {
             Ok(_) => {}
             Err(err) => {
-                return Err(format!("Could not write deck file: {}", err));
+                return Err(format!(
+                    "Could not write deck file to {}: {}",
+                    self.path.to_str().unwrap(),
+                    err
+                ));
             }
         };
 
         Ok(())
     }
 
-    fn logs_path(&self, deck_id: String) -> PathBuf {
-        match &self.config {
-            None => panic!("Deck config not set."),
-            Some(config) => match config.decks.iter().find(|deck| deck.id == deck_id) {
-                Some(deck) => Path::new(deck.path.as_str()).join(".logs.json"),
-                None => {
-                    panic!("Deck not found in config.");
-                }
-            },
-        }
+    pub fn progress(&self) -> Result<Progress, String> {
+        Progress::get(self)
+    }
+    pub fn log(&self) -> Result<Log, String> {
+        Log::get(self)
     }
 
-    pub fn get_logs(&self, deck_id: String) -> Vec<Log> {
-        let logs_path = self.logs_path(deck_id);
-
-        match fs::read_to_string(logs_path) {
-            Ok(contents) => match serde_json::from_str(&contents) {
-                Ok(config) => config,
-                Err(err) => {
-                    panic!("Could not parse config file: {}", err);
-                }
-            },
-            Err(err) => {
-                if err.kind() == std::io::ErrorKind::NotFound {
-                    Vec::new()
-                } else {
-                    panic!("Could not read config file: {}", err);
-                }
-            }
-        }
-    }
-
-    pub fn save_logs(&self, deck_id: String, new_logs: Vec<Log>) {
-        let logs_path = self.logs_path(deck_id);
-
-        match fs::write(logs_path, serde_json::to_string(&new_logs).unwrap()) {
-            Ok(_) => {}
-            Err(err) => {
-                panic!("Could not write config file: {}", err);
-            }
-        }
-    }
-
-    pub fn add_log(&self, deck_id: String, log: Log) {
-        let mut logs = self.get_logs(deck_id.clone());
-        logs.push(log);
-        self.save_logs(deck_id.clone(), logs);
+    pub fn to_entry(&self) -> DeckEntry {
+        DeckEntry::new(self.id.clone(), self.path.clone())
     }
 }
 
 impl Default for Deck {
     fn default() -> Self {
         Deck {
-            config: None,
+            path: PathBuf::new(),
             id: String::new(),
             description: String::new(),
             cards: Vec::new(),
+            progress: Progress::new(String::new(), PathBuf::new()),
+            log: Log::new(String::new(), PathBuf::new()),
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Log {
-    pub last_card: ProgressCard,
-    pub log: ReviewLog,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

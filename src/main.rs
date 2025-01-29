@@ -2,7 +2,6 @@ use clap::Parser;
 
 mod config;
 mod deck;
-mod progress;
 
 mod commands;
 use commands::*;
